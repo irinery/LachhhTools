@@ -29,6 +29,26 @@ Saídas:
 - SWF: `bin/TwitchGiveawayTool.swf`
 - Pacote: `installers/LachhhTools.exe`
 
+## Release versionada (WINDOWS APENAS)
+
+Este projeto tem workflow de release por tag em:
+- `.github/workflows/release-windows.yml`
+
+Ele publica release **somente para Windows** com download de:
+- `LachhhTools.exe`
+
+Como gerar uma release:
+
+```bash
+git tag -a v1.0.0 -m "Release v1.0.0"
+git push origin v1.0.0
+```
+
+Resultado:
+- A Action roda no `windows-latest`
+- Gera o executável via `scripts/build.ps1`
+- Cria a GitHub Release com o asset `installers/LachhhTools.exe`
+
 ## macOS
 
 ```bash
@@ -61,4 +81,3 @@ Saídas:
 
 O arquivo `asconfig.json` foi adicionado para build/IDE moderna sem FDT.
 Ele usa somente dependências locais do repositório.
-
