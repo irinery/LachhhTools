@@ -112,10 +112,10 @@ switch ($PackageTarget) {
 
 Write-Host "Empacotando aplicacao ($PackageTarget)..."
 & $Adt -package `
-    -target $PackageTarget `
     -storetype pkcs12 `
     -keystore "$CertPath" `
     -storepass "$CertPass" `
+    -target $PackageTarget `
     "$PackageOutput" `
     "$DescriptorPath" `
     -C "$BinDir" TwitchGiveawayTool.swf lachhhtools_widget.swf CustomAnimationExamples icons

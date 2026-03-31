@@ -121,10 +121,10 @@ esac
 
 echo "Empacotando aplicação ($PACKAGE_TARGET)..."
 "$ADT" -package \
-  -target "$PACKAGE_TARGET" \
   -storetype pkcs12 \
   -keystore "$CERT_PATH" \
   -storepass "$CERT_PASS" \
+  -target "$PACKAGE_TARGET" \
   "$PACKAGE_OUTPUT" \
   "$DESCRIPTOR_PATH" \
   -C "$BIN_DIR" TwitchGiveawayTool.swf lachhhtools_widget.swf CustomAnimationExamples icons
