@@ -17,7 +17,7 @@ MAIN_CLASS="${MAIN_CLASS:-com.flashinit.ReleaseInit}"
 APP_ID="${APP_ID:-com.lachhh.twitchgiveawaytool}"
 APP_NAME="${APP_NAME:-LachhhTools}"
 APP_FILENAME="${APP_FILENAME:-LachhhTools}"
-APP_VERSION="${APP_VERSION:-1.0.0}"
+APP_VERSION="${APP_VERSION:-1.0.2}"
 AIR_NAMESPACE_VERSION="${AIR_NAMESPACE_VERSION:-25.0}"
 CERT_PASS="${CERT_PASS:-changeit}"
 

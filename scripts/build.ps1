@@ -20,7 +20,7 @@ $CertPath = Join-Path $CertDir "dev-certificate.p12"
 $AppId = if ($env:APP_ID) { $env:APP_ID } else { "com.lachhh.twitchgiveawaytool" }
 $AppName = if ($env:APP_NAME) { $env:APP_NAME } else { "LachhhTools" }
 $AppFilename = if ($env:APP_FILENAME) { $env:APP_FILENAME } else { "LachhhTools" }
-$AppVersion = if ($env:APP_VERSION) { $env:APP_VERSION } else { "1.0.0" }
+$AppVersion = if ($env:APP_VERSION) { $env:APP_VERSION } else { "1.0.2" }
 $AirNamespaceVersion = if ($env:AIR_NAMESPACE_VERSION) { $env:AIR_NAMESPACE_VERSION } else { "25.0" }
 $CertPass = if ($env:CERT_PASS) { $env:CERT_PASS } else { "changeit" }
 

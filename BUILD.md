@@ -43,8 +43,8 @@ Ele publica release **somente para Windows** com download de:
 Como gerar uma release:
 
 ```bash
-git tag -a v1.0.0 -m "Release v1.0.0"
-git push origin v1.0.0
+git tag -a v1.0.2 -m "Release v1.0.2"
+git push origin v1.0.2
 ```
 
 Resultado:
@@ -75,7 +75,7 @@ Saídas:
 
 - `MAIN_CLASS` (default: `com.flashinit.ReleaseInit`)
 - `PACKAGE_TARGET` (`auto`, `native`, `bundle`, `air`)
-- `APP_VERSION` (default: `1.0.0`)
+- `APP_VERSION` (default: `1.0.2`)
 - `APP_ID`, `APP_NAME`, `APP_FILENAME`
 - `CERT_PASS` (default: `changeit`)
 - `AIR_NAMESPACE_VERSION` (default: `25.0`)

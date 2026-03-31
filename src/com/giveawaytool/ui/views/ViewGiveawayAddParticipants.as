@@ -1,4 +1,5 @@
 package com.giveawaytool.ui.views {
+	import com.SimpleIRCBot;
 	import com.giveawaytool.components.LogicTwitchChat;
 	import com.lachhh.flash.LogicLostFocus;
 	import com.giveawaytool.components.TwitchRequestMods;
@@ -25,6 +26,8 @@ package com.giveawaytool.ui.views {
 	public class ViewGiveawayAddParticipants extends ViewBase {
 		private var popupInsert:UIPopupInsert;
 		private var uiMainMenu : UI_GiveawayMenu;
+		private var openedChatChannels:Array = [];
+		private var lastRequestedChannel:String = "";
 
 		public function ViewGiveawayAddParticipants(pScreen : UIBase, pVisual : DisplayObject) {
 			super(pScreen, pVisual);
@@ -34,22 +37,22 @@ package com.giveawaytool.ui.views {
 			new ViewNeedToBeOnline(screen, needOnlineMc4);
 			new ViewNeedToBeOnline(screen, needOnlineMc5);
 			new ViewNeedToBeOnline(screen, needOnlineMc6);
-			
-			
+
+
 			uiMainMenu = (screen as UI_GiveawayMenu);
 			screen.setNameOfDynamicBtn(addFromListBtn, "Add Manually");
-			screen.setNameOfDynamicBtn(fetchFromIRCBtn, "Add Viewers");
+			screen.setNameOfDynamicBtn(fetchFromIRCBtn, "Add Viewers\n(Chat)");
 			screen.setNameOfDynamicBtn(addSubsBtn, "Add Subs");
 			screen.setNameOfDynamicBtn(removeSubBtn, "Remove\nSubs");
 			screen.setNameOfDynamicBtn(keepOnlySubBtn, "Remove\nnon-subs");
 			screen.setNameOfDynamicBtn(addModBtn, "Add Mods");
 			screen.setNameOfDynamicBtn(keepOnlyModBtn, "Remove\nnon-mod");
 			screen.setNameOfDynamicBtn(clearBtn, "CLEAR");
-			
-			
-			
-			
-			
+
+
+
+
+
 			pScreen.registerClick(addFromListBtn, onAddFromList);
 			pScreen.registerClick(fetchFromIRCBtn, onIRC);
 			pScreen.registerClick(addSubsBtn, onAddSubs);
@@ -62,7 +65,7 @@ package com.giveawaytool.ui.views {
 
 			pScreen.registerClick(autoAddBtn, onAutoAdd);
 
-			pScreen.registerEvent(chatCmdTxt, FocusEvent.FOCUS_OUT, onEdit);			
+			pScreen.registerEvent(chatCmdTxt, FocusEvent.FOCUS_OUT, onEdit);
 		}
 
 		private function onClear() : void {
@@ -78,7 +81,7 @@ package com.giveawaytool.ui.views {
 				UI_PopUp.createTwitchLoginRequired();
 				return ;
 			}
-			
+
 			var trimmedNames:Array = MetaGameProgress.instance.metaGiveawayConfig.removeNonMod();
 			uiMainMenu.viewGiveaway.viewNameList.removeViewFromNames(trimmedNames);
 			uiMainMenu.viewGiveaway.viewNameList.setNames(MetaGameProgress.instance.metaGiveawayConfig.participants);
@@ -91,9 +94,9 @@ package com.giveawaytool.ui.views {
 				UI_PopUp.createTwitchLoginRequired();
 				return ;
 			}
-			
+
 			uiMainMenu.viewGiveaway.viewNameList.showLoading(true);
-			
+
 			var logicChat:LogicTwitchChat = UI_Menu.instance.logicNotification.logicListenToChat;
 			TwitchConnection.instance.refreshMods(logicChat, new Callback(onModRefreshed, this, null), new Callback(onSubRefreshError, this, null));
 			refresh();
@@ -113,7 +116,7 @@ package com.giveawaytool.ui.views {
 				UI_PopUp.createTwitchLoginRequired();
 				return ;
 			}
-			
+
 			var trimmedNames:Array = MetaGameProgress.instance.metaGiveawayConfig.removeNonSub();
 			uiMainMenu.viewGiveaway.viewNameList.removeViewFromNames(trimmedNames);
 			uiMainMenu.viewGiveaway.viewNameList.setNames(MetaGameProgress.instance.metaGiveawayConfig.participants);
@@ -128,7 +131,7 @@ package com.giveawaytool.ui.views {
 			}
 			uiMainMenu.viewGiveaway.viewNameList.showLoading(true);
 			TwitchConnection.instance.refreshSub(new Callback(onSubRefreshed, this, null), new Callback(onSubRefreshError, this, null));
-			refresh();			
+			refresh();
 		}
 
 		private function onSubRefreshed() : void {
@@ -138,32 +141,32 @@ package com.giveawaytool.ui.views {
 			uiMainMenu.viewGiveaway.viewNameList.refresh();
 			refresh();
 		}
-		
+
 		private function onRemoveSubs() : void {
 			if(uiMainMenu.viewGiveaway.viewNameList.isLoading()) return ;
 			if(!TwitchConnection.isLoggedIn()) {
 				UI_PopUp.createTwitchLoginRequired();
 				return ;
 			}
-			
+
 			var trimmedNames:Array = MetaGameProgress.instance.metaGiveawayConfig.removeSub();
 			uiMainMenu.viewGiveaway.viewNameList.removeViewFromNames(trimmedNames);
 			uiMainMenu.viewGiveaway.viewNameList.setNames(MetaGameProgress.instance.metaGiveawayConfig.participants);
 			uiMainMenu.viewGiveaway.viewNameList.refresh();
 		}
 
-		
+
 		private function onSubRefreshError() : void {
 			uiMainMenu.viewGiveaway.viewNameList.showLoading(false);
 			refresh();
-			
+
 			if(!TwitchConnection.isLoggedIn()) return ;
 			UI_PopUp.createOkOnly("Oops, I can't fetch your subs. Are you a partner on Twitch?", null);
 		}
-		
+
 		public function addFromChat(name:String):void {
 			if(MetaGameProgress.instance.metaGiveawayConfig.contains(name)) return;
-			if(name == "") return; 
+			if(name == "") return;
 			MetaGameProgress.instance.metaGiveawayConfig.addSingleParticipant(name);
 			uiMainMenu.viewGiveaway.viewNameList.setNames(MetaGameProgress.instance.metaGiveawayConfig.participants);
 			uiMainMenu.viewGiveaway.viewNameList.refreshQuick();
@@ -173,24 +176,27 @@ package com.giveawaytool.ui.views {
 		private function onEdit() : void {
 			MetaGameProgress.instance.metaGiveawayConfig.autoChatAddCmd = chatCmdTxt.text;
 			MetaGameProgress.instance.saveToLocal();
-			UIBase.manager.refresh(); 
+			UIBase.manager.refresh();
 		}
 
 		private function onAutoAdd() : void {
 			MetaGameProgress.instance.metaGiveawayConfig.autoChatAdd = !MetaGameProgress.instance.metaGiveawayConfig.autoChatAdd;
 			refresh();
 		}
-		
+
 		private function onAddFromList() : void {
 			if(uiMainMenu.viewGiveaway.viewNameList.isLoading()) return ;
 			popupInsert = UIPopupInsert.createInsertReplaceAppendCancel("Enter list of names\n(separated by spaces)", new Callback(onAddFromListInput, this, null), new Callback(onAppendFromListInput, this, null), null);
 			screen.doBtnPressAnim(addFromListBtn);
 		}
-		
+
 		private function onIRC() : void {
 			if(uiMainMenu.viewGiveaway.viewNameList.isLoading()) return ;
-			popupInsert = UIPopupInsert.createInsertOne("Enter Channel Name", new Callback(onIRCInput, this, null), null);
-			if(TwitchConnection.instance.isLoggedIn) {
+			refreshOpenedChatChannels();
+			popupInsert = UIPopupInsert.createInsertOne(getSelectChatMsg(), new Callback(onIRCInput, this, null), null);
+			if(openedChatChannels.length > 0) {
+				popupInsert.inputTxt.text = openedChatChannels[0];
+			} else if(TwitchConnection.instance.isLoggedIn) {
 				popupInsert.inputTxt.text = TwitchConnection.getNameOfAccount();
 			} else {
 				popupInsert.inputTxt.text = MetaGameProgress.instance.metaGiveawayConfig.channelToLoad;
@@ -199,20 +205,21 @@ package com.giveawaytool.ui.views {
 		}
 
 		private function onIRCInput() : void {
-			var channelName:String = popupInsert.inputTxt.text;
+			var channelName:String = resolveChannelName(popupInsert.inputTxt.text);
 			if(channelName != "") {
-				loadDataFromChannel(channelName);		
-				MetaGameProgress.instance.metaGiveawayConfig.channelToLoad = channelName;	
+				loadDataFromChannel(channelName);
+				MetaGameProgress.instance.metaGiveawayConfig.channelToLoad = channelName;
 				MetaGameProgress.instance.saveToLocal();
 			}
 		}
-		
+
 		private function loadDataFromChannel(channelName:String):void {
+			lastRequestedChannel = channelName;
 			DataManager.loadExternalNames(channelName, new Callback(onDataLoaded, this, [channelName]), new Callback(onDataLoadedError, this, null));
 			uiMainMenu.viewGiveaway.viewNameList.showLoading(true);
 			refresh();
 		}
-		
+
 		public function cancelLoading():void {
 			DataManager.cancel();
 			uiMainMenu.viewGiveaway.viewNameList.showLoading(false);
@@ -223,19 +230,20 @@ package com.giveawaytool.ui.views {
 			var obj:Object = JSON.parse(DataManager.loadedData);
 		   	var arrayOfNames:Array = obj.chatters.viewers;
 			var arrayOfMods:Array = obj.chatters.moderators;
-			
+
 			arrayOfNames = arrayOfNames.concat(arrayOfMods);
 			removeNameFromList(arrayOfNames, channelName);
-			
+			addOpenedChatChannel(channelName);
+
 			MetaGameProgress.instance.metaGiveawayConfig.addListInParticipants(arrayOfNames, false);
-			
+
 			uiMainMenu.viewGiveaway.viewNameList.showLoading(false);
 			uiMainMenu.viewGiveaway.viewNameList.setNames(MetaGameProgress.instance.metaGiveawayConfig.participants);
 			MetaGameProgress.instance.metaGiveawayConfig.moderators = arrayOfMods;
 			uiMainMenu.viewGiveaway.viewNameList.refresh();
 			refresh();
 		}
-		
+
 		private function removeNameFromList(list:Array, name:String):void {
 			for (var i : int = 0; i < list.length; i++) {
 				var crnt:String = list[i];
@@ -249,16 +257,70 @@ package com.giveawaytool.ui.views {
 		private function onDataLoadedError() : void {
 			uiMainMenu.viewGiveaway.viewNameList.showLoading(false);
 			refresh();
-			UI_PopUp.createOkOnly("Oops, can't retrieve data from " + popupInsert.inputTxt.text + "'s Twitch Channel.", null);
+			UI_PopUp.createOkOnly("Oops, can't retrieve data from " + lastRequestedChannel + "'s Twitch Channel.", null);
 		}
-		
+
+		private function refreshOpenedChatChannels():void {
+			openedChatChannels = [];
+			addOpenedChatChannel(TwitchConnection.getNameOfAccount());
+			addOpenedChatChannel(MetaGameProgress.instance.metaGiveawayConfig.channelToLoad);
+			var logicChat:LogicTwitchChat = UI_Menu.instance.logicNotification.logicListenToChat;
+			if(logicChat == null) return;
+			var ircBot:SimpleIRCBot = logicChat.getIRCBot();
+			if(ircBot == null) return;
+			if(ircBot.metaIRCConnection == null) return;
+			addOpenedChatChannel(ircBot.metaIRCConnection.channelName);
+		}
+
+		private function addOpenedChatChannel(channel:String):void {
+			if(channel == null) return;
+			channel = trim(channel);
+			if(channel == "") return;
+			if(channel.charAt(0) == "#") {
+				channel = channel.substr(1);
+			}
+			var lower:String = channel.toLowerCase();
+			for (var i : int = 0; i < openedChatChannels.length; i++) {
+				if(String(openedChatChannels[i]).toLowerCase() == lower) return;
+			}
+			openedChatChannels.push(channel);
+		}
+
+		private function getSelectChatMsg():String {
+			if(openedChatChannels.length <= 0) return "Enter Channel Name";
+			var msg:String = "Choose the chat to collect users from:";
+			for (var i : int = 0; i < openedChatChannels.length; i++) {
+				msg += "\n" + (i + 1) + ") " + openedChatChannels[i];
+			}
+			msg += "\n(Type index or channel name)";
+			return msg;
+		}
+
+		private function resolveChannelName(rawInput:String):String {
+			var sanitized:String = trim(rawInput);
+			if(sanitized == "") return "";
+			if(sanitized.charAt(0) == "#") sanitized = sanitized.substr(1);
+			if(/^\d+$/.test(sanitized)) {
+				var index:int = int(sanitized) - 1;
+				if(index >= 0 && index < openedChatChannels.length) {
+					return String(openedChatChannels[index]);
+				}
+			}
+			return sanitized;
+		}
+
+		private function trim(value:String):String {
+			if(value == null) return "";
+			return value.replace(/^\s+|\s+$/g, "");
+		}
+
 		private function onAddFromListInput() : void {
 			var listNames:String = popupInsert.inputTxt.text;
 			uiMainMenu.viewGiveaway.viewNameList.setNames(nameToArray(listNames));
 			MetaGameProgress.instance.metaGiveawayConfig.participants = uiMainMenu.viewGiveaway.viewNameList.getNames();
 			uiMainMenu.viewGiveaway.viewNameList.refresh();
 		}
-		
+
 		private function onAppendFromListInput() : void {
 			var listNames:String = popupInsert.inputTxt.text;
 			var a:Vector.<MetaParticipant> = uiMainMenu.viewGiveaway.viewNameList.getNames();
@@ -268,31 +330,31 @@ package com.giveawaytool.ui.views {
 			MetaGameProgress.instance.metaGiveawayConfig.participants = a;
 			uiMainMenu.viewGiveaway.viewNameList.refresh();
 		}
-		
+
 		static public function nameToArray(names:String):Vector.<MetaParticipant> {
 			var splitter:String = "" ;
 			var arrayTest:Array ;
-			var justNamesSeparatedWithSpace:String ; 
+			var justNamesSeparatedWithSpace:String ;
 			var resultString:Array ;
 			var result:Vector.<MetaParticipant> = new Vector.<MetaParticipant>();
 			if(hasInstanceOf(names, "VIEWERS")) splitter = "VIEWERS";
 			if(hasInstanceOf(names, "\nVIEWERS")) splitter = "\nVIEWERS";
 			if(hasInstanceOf(names, "\\nVIEWERS")) splitter = "\\nVIEWERS";
-			if(hasInstanceOf(names, "\r\nVIEWERS")) splitter = "\r\nVIEWERS"; 
-			
+			if(hasInstanceOf(names, "\r\nVIEWERS")) splitter = "\r\nVIEWERS";
+
 			if(splitter == "") {
 				justNamesSeparatedWithSpace = names;
 			} else {
 				arrayTest = names.split(splitter);
 				justNamesSeparatedWithSpace = arrayTest[1];
 			}
-			
+
 			resultString = justNamesSeparatedWithSpace.split(" ");
-			
+
 			for (var i : int = 0; i < resultString.length; i++) {
 				result.push(new MetaParticipant(resultString[i]));
 			}
-			
+
 			return result;
 		}
 
@@ -304,15 +366,15 @@ package com.giveawaytool.ui.views {
 			keepOnlySubBtn.selectIfBoolean(uiMainMenu.viewGiveaway.viewNameList.isLoading());
 			addModBtn.selectIfBoolean(uiMainMenu.viewGiveaway.viewNameList.isLoading());
 			keepOnlyModBtn.selectIfBoolean(uiMainMenu.viewGiveaway.viewNameList.isLoading());
-			
-			screen.setCheckBox(MetaGameProgress.instance.metaGiveawayConfig.autoChatAdd, autoAddBtn); 
+
+			screen.setCheckBox(MetaGameProgress.instance.metaGiveawayConfig.autoChatAdd, autoAddBtn);
 			chatCmdTxt.text = MetaGameProgress.instance.metaGiveawayConfig.autoChatAddCmd;
 		}
-		
+
 		static private function hasInstanceOf(str:String, msg:String):Boolean {
 			 return (str.indexOf(msg) != -1);
 		}
-		
+
 		public function get addFromListBtn() : ButtonSelect { return visual.getChildByName("addFromListBtn") as ButtonSelect;}
 		public function get fetchFromIRCBtn() : ButtonSelect { return visual.getChildByName("fetchFromIRCBtn") as ButtonSelect;}
 		public function get addSubsBtn() : ButtonSelect { return visual.getChildByName("addSubsBtn") as ButtonSelect;}
@@ -321,10 +383,10 @@ package com.giveawaytool.ui.views {
 		public function get keepOnlyModBtn() : ButtonSelect { return visual.getChildByName("keepOnlyModBtn") as ButtonSelect;}
 		public function get clearBtn() : ButtonSelect { return visual.getChildByName("clearBtn") as ButtonSelect;}
 		public function get removeSubBtn() : ButtonSelect { return visual.getChildByName("removeSubBtn") as ButtonSelect;}
-		
-		
-		
-		
+
+
+
+
 		public function get autoAddBtn() : MovieClip { return visual.getChildByName("autoAddBtn") as MovieClip;}
 		public function get chatCmdTxt() : TextField { return visual.getChildByName("chatCmdTxt") as TextField;}
 		public function get needOnlineMc1() : MovieClip { return visual.getChildByName("needOnlineMc1") as MovieClip;}
@@ -332,7 +394,7 @@ package com.giveawaytool.ui.views {
 		public function get needOnlineMc3() : MovieClip { return visual.getChildByName("needOnlineMc3") as MovieClip;}
 		public function get needOnlineMc4() : MovieClip { return visual.getChildByName("needOnlineMc4") as MovieClip;}
 		public function get needOnlineMc5() : MovieClip { return visual.getChildByName("needOnlineMc5") as MovieClip;}
-		public function get needOnlineMc6() : MovieClip { return visual.getChildByName("needOnlineMc6") as MovieClip;}	
-		
+		public function get needOnlineMc6() : MovieClip { return visual.getChildByName("needOnlineMc6") as MovieClip;}
+
 	}
 }

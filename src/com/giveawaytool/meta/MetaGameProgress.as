@@ -1,6 +1,7 @@
 package com.giveawaytool.meta {
 	import com.giveawaytool.io.playerio.MetaGameWispSub;
 	import com.giveawaytool.io.twitch.MetaGameWispConnection;
+	import com.giveawaytool.io.youtube.MetaYoutubeConnection;
 	import com.giveawaytool.io.playerio.MetLachhhToolSubGroup;
 	import com.giveawaytool.io.twitch.MetaTwithConnection;
 	import com.giveawaytool.meta.donations.MetaDonationsConfig;
@@ -28,6 +29,7 @@ package com.giveawaytool.meta {
 		public var metaSubsConfig : MetaSubsConfig;
 		public var metaFollowConfig : MetaFollowConfig;
 		public var metaTwitchConnection : MetaTwithConnection;
+		public var metaYoutubeConnection : MetaYoutubeConnection;
 		
 		public var metaTwitchChat : MetaTwitchChat;
 		public var metaLachhhToolGameWispSub:MetLachhhToolSubGroup;
@@ -59,6 +61,7 @@ package com.giveawaytool.meta {
 			metaSubsConfig = new MetaSubsConfig();
 			metaTweetAlertConfig = new MetaTweetAlertConfig();
 			metaTwitchConnection = new MetaTwithConnection();
+			metaYoutubeConnection = new MetaYoutubeConnection();
 			metaFollowConfig = new MetaFollowConfig();
 			metaTwitchChat = new MetaTwitchChat();
 			metaCheerAlertConfig = new MetaCheerConfig();
@@ -81,6 +84,7 @@ package com.giveawaytool.meta {
 			saveData["metaSubsConfig"] = metaSubsConfig.encode();
 			saveData["metaTweetAlertConfig"] = metaTweetAlertConfig.encode();
 			saveData["metaTwitchConnection"] = metaTwitchConnection.encode();
+			saveData["metaYoutubeConnection"] = metaYoutubeConnection.encode();
 			saveData["metaGameWispConnection"] = metaGameWispConnection.encode();
 			
 			saveData["metaFollowConfig"] = metaFollowConfig.encode();
@@ -106,6 +110,7 @@ package com.giveawaytool.meta {
 			metaSubsConfig.decode(obj["metaSubsConfig"]) ;
 			metaTweetAlertConfig.decode(obj["metaTweetAlertConfig"]) ;
 			metaTwitchConnection.decode(obj["metaTwitchConnection"]) ;
+			metaYoutubeConnection.decode(obj["metaYoutubeConnection"]) ;
 			metaGameWispConnection.decode(obj["metaGameWispConnection"]) ;
 			
 			metaFollowConfig.decode(obj["metaFollowConfig"]) ;
