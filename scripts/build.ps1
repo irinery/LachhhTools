@@ -115,6 +115,7 @@ Write-Host "Empacotando aplicacao ($PackageTarget)..."
     -storetype pkcs12 `
     -keystore "$CertPath" `
     -storepass "$CertPass" `
+    -tsa none `
     -target $PackageTarget `
     "$PackageOutput" `
     "$DescriptorPath" `
