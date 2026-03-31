@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8" standalone="no" ?>
+<application xmlns="http://ns.adobe.com/air/application/__AIR_NAMESPACE_VERSION__">
+  <id>__APP_ID__</id>
+  <versionNumber>__VERSION__</versionNumber>
+  <filename>__FILENAME__</filename>
+  <name>__APP_NAME__</name>
+  <description>__APP_NAME__</description>
+  <initialWindow>
+    <content>TwitchGiveawayTool.swf</content>
+    <visible>true</visible>
+    <autoOrients>false</autoOrients>
+    <fullScreen>false</fullScreen>
+    <renderMode>direct</renderMode>
+  </initialWindow>
+  <icon>
+    <image16x16>icons/Logos16.png</image16x16>
+    <image32x32>icons/Logos32_2.png</image32x32>
+    <image36x36>icons/Logos36_2.png</image36x36>
+    <image48x48>icons/Logos48_2.png</image48x48>
+    <image72x72>icons/Logo72x72.png</image72x72>
+    <image114x114>icons/Logo114x114.png</image114x114>
+    <image128x128>icons/Logo128x128.png</image128x128>
+  </icon>
+</application>
+

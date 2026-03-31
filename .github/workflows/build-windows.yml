@@ -1,0 +1,41 @@
+name: Windows Build
+
+on:
+  push:
+    branches: [ "main", "master" ]
+  pull_request:
+    branches: [ "main", "master" ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '11'
+
+      - name: Setup HARMAN AIR SDK
+        uses: joshtynjala/setup-adobe-air-action@v2
+        with:
+          air-version: '50.2.4.2' # Versão recente do AIR SDK
+          accept-license: true
+
+      - name: Build Application
+        shell: powershell
+        run: |
+          .\scripts\build.ps1
+
+      - name: Upload Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: LachhhTools-Windows
+          path: |
+            bin/TwitchGiveawayTool.swf
+            installers/LachhhTools.exe

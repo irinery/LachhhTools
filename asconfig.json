@@ -1,0 +1,23 @@
+{
+  "config": "air",
+  "compilerOptions": {
+    "source-path": [
+      "src"
+    ],
+    "library-path": [
+      "lib",
+      "LachhhAds.swc"
+    ],
+    "output": "bin/TwitchGiveawayTool.swf",
+    "target-player": "25.0",
+    "default-size": {
+      "width": 1280,
+      "height": 720
+    },
+    "default-frame-rate": 60,
+    "static-link-runtime-shared-libraries": true
+  },
+  "mainClass": "com.flashinit.ReleaseInit",
+  "application": "bin/TwitchGiveawayTool-app.xml"
+}
+
