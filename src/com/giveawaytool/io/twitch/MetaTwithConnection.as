@@ -32,7 +32,6 @@ package com.giveawaytool.io.twitch {
 		
 		public function encode():Dictionary {
 			saveData["lastNameLogin"] = lastNameLogin;
-			saveData["chatIRCoauth"] = chatIRCoauth;
 			saveData["lastAccessTokenHelix"] = lastAccessTokenHelix;
 			
 			return saveData; 
@@ -40,11 +39,10 @@ package com.giveawaytool.io.twitch {
 		
 		public function decode(loadData:Dictionary):void {
 			if(loadData == null) return ;
-			chatIRCoauth = loadData["chatIRCoauth"];
+			chatIRCoauth = "";
 			lastNameLogin = loadData["lastNameLogin"];
 			lastAccessTokenHelix = loadData["lastAccessTokenHelix"];
 			
-			if(chatIRCoauth == null) chatIRCoauth = "";
 			if(lastNameLogin == null) lastNameLogin = "";
 			if(lastAccessTokenHelix == null) lastAccessTokenHelix = "";
 		}

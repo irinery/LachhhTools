@@ -1,5 +1,8 @@
 # Build local (sem arquivos externos)
 
+Documentação de segurança:
+- OAuth Twitch (checklist contínuo): `docs/security/OAUTH_TWITCH_CHECKLIST.md`
+
 Este repositório agora possui build autônomo para AIR Desktop, sem depender de arquivos externos da FDT (como certificado em `docs/certificates` ou descriptor gerado manualmente).
 
 ## Pré-requisitos

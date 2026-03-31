@@ -52,16 +52,12 @@ package com.giveawaytool.components {
 		}
 
 		private function onConnectSuccess() : void {
-			MetaGameProgress.instance.metaTwitchConnection.chatIRCoauth = simpleIRCBot.metaIRCConnection.auth;
-			MetaGameProgress.instance.saveToLocal();
 			simpleIRCBot.callbackMsgReceived.addCallback(new Callback(onMsg, this, null));
 			callbackOnConnectGroup.call();
 			UIBase.manager.refresh();
 		}
 		
 		private function onConnectError() : void {
-			MetaGameProgress.instance.metaTwitchConnection.chatIRCoauth = "";
-			MetaGameProgress.instance.saveToLocal();
 			callbackOnFailedGroup.call();
 			UIBase.manager.refresh();
 		}

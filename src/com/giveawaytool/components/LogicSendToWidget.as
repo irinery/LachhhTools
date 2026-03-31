@@ -121,25 +121,23 @@ package com.giveawaytool.components {
 			onWidgetChanged.call();
 		}
 	  
-	 	private function widgetSocket_dataHandler( event:ProgressEvent ):void {
+		private function widgetSocket_dataHandler( event:ProgressEvent ):void {
 			trace("WidgetsConnectionManager ::: widgetSocket_dataHandler");
 			
 			var s:Socket = event.currentTarget as Socket;
 			var p:String;
 			
 			var msg:String = s.readUTFBytes(s.bytesAvailable);
-			trace("    - msg: ", msg);
+			trace("    - msg length: " + msg.length);
 			 
-			if(msg.toString().indexOf("GET /?code=") == 0) {
-				var a:Array = msg.toString().split("?code=");
-				var str1:String = a[1];
-				var a2:Array = str1.split("&");
-				var code:String = a2[0];
-				//s.flush();
+			if(msg.toString().indexOf("GET /?") == 0) {
+				var queryVars:Object = parseHttpQuery(msg);
+				var code:String = safeString(queryVars["code"]);
+				var state:String = safeString(queryVars["state"]);
 				if(modelAPIToGetCodeFrom == MODEL_TWITCH) {
-					TwitchConnection.instance.setCodeFromWebSocket(code);
+					TwitchConnection.instance.setCodeFromWebSocket(code, state);
 				} else if(modelAPIToGetCodeFrom == MODEL_STREAMLABS) {
-					StreamLabsConnection.instance.setCodeFromWebSocket(code);
+					StreamLabsConnection.instance.setCodeFromWebSocket(code, state);
 				}
 				///clearShitOnURL();
 				
@@ -161,6 +159,37 @@ package com.giveawaytool.components {
 				sendConfig();	
 			}
 	       
+		}
+		
+		private function parseHttpQuery(rawRequest:String):Object {
+			var result:Object = {};
+			if(rawRequest == null) return result;
+			if(rawRequest.length > 8192) return result;
+			var firstLine:Array = rawRequest.split("\n");
+			if(firstLine.length == 0) return result;
+			var line:String = firstLine[0];
+			var getPrefix:String = "GET /?";
+			if(line.indexOf(getPrefix) != 0) return result;
+			var httpIndex:int = line.indexOf(" HTTP/");
+			if(httpIndex <= getPrefix.length) return result;
+			
+			var query:String = line.substring(getPrefix.length, httpIndex);
+			var params:Array = query.split("&");
+			for (var i : int = 0; i < params.length; i++) {
+				var segment:String = params[i];
+				if(segment == null || segment == "") continue;
+				var eq:int = segment.indexOf("=");
+				if(eq <= 0) continue;
+				var key:String = segment.substring(0, eq);
+				var value:String = segment.substring(eq + 1);
+				result[key] = decodeURIComponent(value.replace(/\+/g, "%20"));
+			}
+			return result;
+		}
+		
+		private function safeString(value:Object):String {
+			if(value == null) return "";
+			return String(value);
 		}
 
 		

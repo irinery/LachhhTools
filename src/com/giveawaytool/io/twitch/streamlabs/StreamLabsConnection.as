@@ -38,6 +38,7 @@ package com.giveawaytool.io.twitch.streamlabs {
 		private var closeOnNext : Boolean;
 		private var isTokenValid : Boolean;
 		private var mySocket : LogicSendToWidget;
+		private var pendingOAuthState:String = "";
 
 		public function StreamLabsConnection() {
 			accessToken = "";
@@ -47,6 +48,7 @@ package com.giveawaytool.io.twitch.streamlabs {
 		public function clear():void {
 			accessToken = "";
 			authCode = "";
+			pendingOAuthState = "";
 			isLoggedIn = false;
 		}
 		
@@ -86,7 +88,15 @@ package com.giveawaytool.io.twitch.streamlabs {
 			}
 		}
 		
-		public function setCodeFromWebSocket(code : String) : void {
+		public function setCodeFromWebSocket(code : String, state:String = null) : void {
+			if(!isValidOAuthCode(code)) {
+				onAuthCodeSendError();
+				return;
+			}
+			if(!isValidStateAndConsume(state)) {
+				onAuthCodeSendError();
+				return;
+			}
 			authCode = code;
 			onStep1Done();
 		}
@@ -119,10 +129,11 @@ package com.giveawaytool.io.twitch.streamlabs {
 		}
 				
 		public function getConnectURL():String {
+			pendingOAuthState = getStateRandom();
 			var url:String = "https://streamlabs.com/api/v1.0/authorize?response_type=code"; 
 			url = url + "&client_id=" + VersionInfoDONTSTREAMTHIS.STREAMLABS_CLIENT_ID ;
 			url = url + "&redirect_uri=" + VersionInfoDONTSTREAMTHIS.STREAMLABS_CLIENT_REDIRECT ;
-			url = url + "&state=" + getStateRandom();
+			url = url + "&state=" + pendingOAuthState;
 			url = url + "&scope=donations.read";
 
 			return url;
@@ -158,7 +169,8 @@ package com.giveawaytool.io.twitch.streamlabs {
 		private function onAuthCodeSendSuccess() : void {
 			var msg : Message = PlayerIOLachhhRPGController.getInstance().mySecuredConnection.connectionGameRoom.getStreamLabsAccessTokenSuccess.msg;
 			accessToken = msg.getString(0);
-			if(accessToken != null) {
+			authCode = "";
+			if(isValidAccessToken(accessToken)) {
 				isTokenValid = true;
 				UI_PopUp.closeAllPopups();
 				UI_PopUp.createOkOnly("Connected to StreamLabs successfully!", null)
@@ -170,6 +182,8 @@ package com.giveawaytool.io.twitch.streamlabs {
 		}
 		
 		private function onAuthCodeSendError() : void {
+			authCode = "";
+			pendingOAuthState = "";
 			UI_PopUp.closeAllPopups();
 			if(onConnectError) onConnectError.call();
 		}
@@ -235,6 +249,28 @@ package com.giveawaytool.io.twitch.streamlabs {
 		private function getDigit():String {
 			var i:int = Math.random()*10;
 			return i.toString();
+		}
+		
+		private function isValidOAuthCode(code:String):Boolean {
+			if(code == null) return false;
+			if(code.length < 8) return false;
+			if(code.length > 512) return false;
+			return /^[A-Za-z0-9\-_]+$/.test(code);
+		}
+		
+		private function isValidStateAndConsume(state:String):Boolean {
+			if(pendingOAuthState == null || pendingOAuthState == "") return false;
+			var expected:String = pendingOAuthState;
+			pendingOAuthState = "";
+			if(state == null) return false;
+			return (state == expected);
+		}
+		
+		private function isValidAccessToken(token:String):Boolean {
+			if(token == null) return false;
+			if(token.length < 8) return false;
+			if(token.length > 2048) return false;
+			return /^[A-Za-z0-9\-_]+$/.test(token);
 		}
 		
 		static public function getInstance():StreamLabsConnection {

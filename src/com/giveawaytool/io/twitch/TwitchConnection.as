@@ -63,6 +63,7 @@ package com.giveawaytool.io.twitch {
 		public var channelData : MetaTwitchChannelData = new MetaTwitchChannelData();
 		public var isLive : Boolean = false;
 		private var authCode : String;
+		private var pendingOAuthState:String = "";
 
 		public function TwitchConnection(pIsAdmin : Boolean) {
 			accessToken = "";
@@ -71,6 +72,8 @@ package com.giveawaytool.io.twitch {
 		
 		public function clear():void {
 			accessToken = "";
+			authCode = "";
+			pendingOAuthState = "";
 			listOfSubs = new MetaSubscribersList();
 			channelData = new MetaTwitchChannelData();
 			followersData = new MetaFollowerList();
@@ -233,6 +236,7 @@ package com.giveawaytool.io.twitch {
 		
 		public function getConnectURL():String {
 			var redirect:String = VersionInfoDONTSTREAMTHIS.TWITCH_REDIRECT_URI;
+			pendingOAuthState = getStateRandom();
 			//var url:String = "https://api.twitch.tv/kraken/oauth2/authorize?response_type=code&api_version=5&client_id=" + VersionInfoDONTSTREAMTHIS.TWITCH_CLIENT_ID + "&redirect_uri=" + redirect + "&force_verify=true&scope=user_read";
 			
 			//https://id.twitch.tv/oauth2/authorize
@@ -244,6 +248,7 @@ package com.giveawaytool.io.twitch {
 			url = url + "+channel_commercial";
 			url = url + "+chat_login";
 			url = url + "+user_subscriptions";
+			url = url + "&state=" + pendingOAuthState;
 			if(isAdminConnect) url = url + "+channel_subscriptions";			 
 			return url;
 		}
@@ -254,8 +259,18 @@ package com.giveawaytool.io.twitch {
 			connectStep2FetchUsername();
 		}
 
-		public function setCodeFromWebSocket(authCode : String) : void {
+		public function setCodeFromWebSocket(authCode : String, state:String = null) : void {
 			if(isLoggedIn) return;
+			if(!isValidOAuthCode(authCode)) {
+				connectErrorMsg = "Invalid Twitch authorization code";
+				onAuthCodeSendError();
+				return;
+			}
+			if(!isValidStateAndConsume(state)) {
+				connectErrorMsg = "Invalid Twitch authorization state";
+				onAuthCodeSendError();
+				return;
+			}
 			this.authCode = authCode;
 			MetaServerProgress.instance.getTwitchAccessToken(authCode, new Callback(onAuthCodeSendSuccess, this, null), new Callback(onAuthCodeSendError, this, null));
 		}
@@ -264,7 +279,8 @@ package com.giveawaytool.io.twitch {
 			//UI_Menu.instance.logicNotification.logicSendToWidgetAuth.sendSuccessMsg();
 			var msg : Message = PlayerIOLachhhRPGController.getInstance().myPublicConnection.connectionGameRoom.getTwitchTokenSuccess.msg;
 			accessToken = msg.getString(0);
-			if(accessToken != null) {
+			authCode = "";
+			if(isValidAccessToken(accessToken)) {
 				onStep1Done();
 			} else {
 				onAuthCodeSendError();
@@ -272,6 +288,9 @@ package com.giveawaytool.io.twitch {
 		}
 		
 		private function onAuthCodeSendError() : void {
+			authCode = "";
+			accessToken = "";
+			pendingOAuthState = "";
 			UI_PopUp.closeAllPopups();
 			if(onConnectError) onConnectError.call();
 		}
@@ -515,6 +534,45 @@ package com.giveawaytool.io.twitch {
 		public static function isLoggedIn() : Boolean {
 			if(instance == null) return false;
 			return instance.isLoggedIn;
+		}
+		
+		private function isValidOAuthCode(code:String):Boolean {
+			if(code == null) return false;
+			if(code.length < 8) return false;
+			if(code.length > 512) return false;
+			return /^[A-Za-z0-9\-_]+$/.test(code);
+		}
+		
+		private function isValidAccessToken(token:String):Boolean {
+			if(token == null) return false;
+			if(token.length < 8) return false;
+			if(token.length > 2048) return false;
+			return /^[A-Za-z0-9\-_]+$/.test(token);
+		}
+		
+		private function isValidStateAndConsume(state:String):Boolean {
+			if(pendingOAuthState == null || pendingOAuthState == "") return false;
+			var expected:String = pendingOAuthState;
+			pendingOAuthState = "";
+			if(state == null) return false;
+			return (state == expected);
+		}
+		
+		private function getStateRandom():String {
+			return getDigits(8) + "-" + getDigits(8) + "-" + getDigits(8) + "-" + getDigits(8);
+		}
+		
+		private function getDigits(n:int):String {
+			var result:String = "";
+			for (var i : int = 0; i < n; i++) {
+				result += getDigit();
+			}
+			return result;
+		}
+		
+		private function getDigit():String {
+			var i:int = Math.random() * 10;
+			return i.toString();
 		}
 	}
 }
