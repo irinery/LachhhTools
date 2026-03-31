@@ -119,6 +119,14 @@ case "$PACKAGE_TARGET" in
     ;;
 esac
 
+echo "Validando arquivos (Pre-empacotamento)..."
+for asset in "$OUTPUT_SWF" "$WIDGET_OUTPUT" "$BIN_DIR/icons/Logos16.png"; do
+  if [[ ! -f "$asset" ]]; then
+    echo "ERRO FATAL: Asset obrigatório não encontrado antes do empacotamento: $asset"
+    exit 1
+  fi
+done
+
 echo "Empacotando aplicação ($PACKAGE_TARGET)..."
 "$ADT" -package \
   -storetype pkcs12 \
@@ -128,6 +136,11 @@ echo "Empacotando aplicação ($PACKAGE_TARGET)..."
   "$PACKAGE_OUTPUT" \
   "$DESCRIPTOR_PATH" \
   -C "$BIN_DIR" TwitchGiveawayTool.swf lachhhtools_widget.swf CustomAnimationExamples icons
+
+if [[ ! -e "$PACKAGE_OUTPUT" ]]; then
+  echo "ERRO FATAL: Pacote $PACKAGE_TARGET não gerado em $PACKAGE_OUTPUT!"
+  exit 1
+fi
 
 echo "Build concluído:"
 echo "  SWF: $OUTPUT_SWF"

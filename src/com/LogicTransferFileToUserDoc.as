@@ -14,10 +14,7 @@ package com {
 		private var fileNameSrc : String;
 
 		public static function execute() : void {
-			
-			createAndTransferLocal("lachhhtools_widget.html");
 			createAndTransferLocal("lachhhtools_widget.swf");
-			
 		}
 		
 		public function transfer(pFileSrcPath:String, pFileNameOutput: String):void {

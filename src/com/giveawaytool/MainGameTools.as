@@ -31,7 +31,8 @@ package com.giveawaytool {
 						
 			UIBase.manager.add(dummyActor);
 						
-			stage.scaleMode = StageScaleMode.NO_BORDER;
+			stage.scaleMode = StageScaleMode.NO_SCALE;
+			stage.align = flash.display.StageAlign.TOP_LEFT;
 			stage.color = 0x000000;
 			
 			new UIFontLoopkup();

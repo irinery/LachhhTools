@@ -110,6 +110,18 @@ switch ($PackageTarget) {
     default { throw "PACKAGE_TARGET invalido: $PackageTarget (use bundle|native|air|auto)." }
 }
 
+Write-Host "Validando arquivos (Pre-empacotamento)..."
+$BuildAssets = @(
+    $OutputSwf,
+    $WidgetOutput,
+    (Join-Path $BinIcons "Logos16.png")
+)
+foreach ($asset in $BuildAssets) {
+    if (-not (Test-Path $asset)) {
+        throw "ERRO FATAL: Asset obrigatorio nao encontrado antes do empacotamento: $asset"
+    }
+}
+
 Write-Host "Empacotando aplicacao ($PackageTarget)..."
 & $Adt -package `
     -storetype pkcs12 `
@@ -121,6 +133,10 @@ Write-Host "Empacotando aplicacao ($PackageTarget)..."
     "$DescriptorPath" `
     -C "$BinDir" TwitchGiveawayTool.swf lachhhtools_widget.swf CustomAnimationExamples icons
 if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+if (-not (Test-Path $PackageOutput)) {
+    throw "ERRO FATAL: Pacote $PackageTarget nao gerado em $PackageOutput!"
+}
 
 Write-Host "Build concluido:"
 Write-Host "  SWF: $OutputSwf"

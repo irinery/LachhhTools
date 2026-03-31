@@ -10,6 +10,7 @@ package com.flashinit {
 	import flash.display.StageAlign;
 	import flash.display.StageScaleMode;
 	import flash.events.Event;
+	import flash.events.NativeWindowBoundsEvent;
 	import flash.geom.Rectangle;
 	import flash.net.URLRequest;
 	import flash.system.ApplicationDomain;
@@ -84,17 +85,26 @@ package com.flashinit {
 		private function onComplete(event : Event) : void {
 			
 			newWindow.stage.frameRate = 60;
-			newWindow.stage.addEventListener(Event.ENTER_FRAME, onEnterFrame);
-			//newWindow.stage.displayState = StageDisplayState.FULL_SCREEN_INTERACTIVE;
-			//newWindow.stage.scaleMode = StageScaleMode.SHOW_ALL;
 			
+			mainWindow.addEventListener(NativeWindowBoundsEvent.MOVE, onBoundsChange);
+			mainWindow.addEventListener(NativeWindowBoundsEvent.RESIZE, onBoundsChange);
+			mainWindow.addEventListener(Event.ACTIVATE, onMainWindowActivate);
+			mainWindow.addEventListener(Event.CLOSING, onMainWindowClose);
+			
+			refresh();
 		}
 
-		private function onEnterFrame(event : Event) : void {
-			//newWindow.activate()
-			
-			checkIfHasBeenClosed();
+		private function onBoundsChange(event : Event) : void {
 			refresh(); 
+		}
+		
+		private function onMainWindowActivate(event : Event) : void {
+			if(newWindow == null || newWindow.closed) return;
+			newWindow.orderInBackOf(mainWindow);
+		}
+		
+		private function onMainWindowClose(event : Event) : void {
+			destroy();
 		}
 		
 		private function checkIfHasBeenClosed() : void {
@@ -117,9 +127,16 @@ package com.flashinit {
 			
 			var activeWindow : NativeWindow = mainWindow;
 			if(activeWindow.closed) return;
-			newWindow.orderInBackOf(mainWindow);
-			newWindow.x = activeWindow.x +4;
-			newWindow.y = activeWindow.y +1;
+			
+			var targetX:Number = activeWindow.x + 4;
+			var targetY:Number = activeWindow.y + 1;
+			
+			if (Math.abs(newWindow.x - targetX) > 1) {
+				newWindow.x = targetX;
+			}
+			if (Math.abs(newWindow.y - targetY) > 1) {
+				newWindow.y = targetY;
+			}
 		}
 	}
 }
