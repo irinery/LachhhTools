@@ -85,15 +85,15 @@ if (-not (Test-Path $MainClassFile)) {
 
 Write-Host "Compilando SWF..."
 & $Compiler `
-    +configname=air `
-    -source-path+="$RootDir/src" `
-    -library-path+="$RootDir/lib" `
-    -library-path+="$RootDir/LachhhAds.swc" `
+    "+configname=air" `
+    "-source-path+=$RootDir/src" `
+    "-library-path+=$RootDir/lib" `
+    "-library-path+=$RootDir/LachhhAds.swc" `
     -output "$OutputSwf" `
-    -target-player=25.0 `
-    -default-size=1280,720 `
-    -default-frame-rate=60 `
-    -static-link-runtime-shared-libraries=true `
+    "-target-player=25.0" `
+    "-default-size=1280,720" `
+    "-default-frame-rate=60" `
+    "-static-link-runtime-shared-libraries=true" `
     "$MainClassFile"
 if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
