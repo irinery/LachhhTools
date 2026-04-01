@@ -35,13 +35,57 @@ Preencha:
 
 ## Build
 
-Exemplo para gerar build da versão `v1.0.2`:
+Exemplo para gerar build local macOS da versão `v0.0.1`:
 
 ```bash
-APP_VERSION=1.0.2 ./scripts/build.sh
+APP_VERSION=0.0.1 ./scripts/build.sh
 ```
 
-Para release por tag:
+Exemplo para gerar build local Windows da versão `v1.0.3`:
+
+```powershell
+$env:APP_VERSION="1.0.3"
+.\scripts\build.ps1
+```
+
+## CI/CD em GitHub Actions
+
+O projeto agora possui pipeline paralela para Windows e macOS em:
+
+- `.github/workflows/build-windows.yml`
+
+Versões fixas por plataforma no CI:
+
+- Windows: `v1.0.3`
+- macOS: `v0.0.1`
+
+Smoke test de integração automatizado em cada job:
+
+- Valida build + empacotamento
+- Falha se artefatos obrigatórios não forem gerados
+
+## Release por plataforma (tags)
+
+Windows (mantido em `v1.0.3`):
+
+```bash
+git tag -a v1.0.3 -m "Release Windows v1.0.3"
+git push origin v1.0.3
+```
+
+macOS (nova release `v0.0.1` via tag `v0.0.1-mac`):
+
+```bash
+git tag -a v0.0.1-mac -m "Release macOS v0.0.1"
+git push origin v0.0.1-mac
+```
+
+Fluxos de release:
+
+- `.github/workflows/release-windows.yml` (asset `LachhhTools.exe`)
+- `.github/workflows/release-macos.yml` (asset `LachhhTools-macOS-v0.0.1.zip`)
+
+Comandos legados por tag (exemplo):
 
 ```bash
 git tag -a v1.0.2 -m "Release v1.0.2"
