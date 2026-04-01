@@ -7,12 +7,6 @@ on:
       - ".github/workflows/build-macos.yml"
       - ".github/workflows/release-macos.yml"
       - "scripts/build.sh"
-  pull_request:
-    branches: [ "main", "master" ]
-    paths:
-      - ".github/workflows/build-macos.yml"
-      - ".github/workflows/release-macos.yml"
-      - "scripts/build.sh"
   workflow_dispatch:
 
 jobs:

@@ -42,6 +42,7 @@ Características:
 - Windows e macOS rodam em workflows independentes
 - Build Windows via `scripts/build.ps1`
 - Build macOS via `scripts/build.sh` com gatilho por `paths`:
+  - Executa em `push` para `main/master` (e manual via `workflow_dispatch`)
   - `.github/workflows/build-macos.yml`
   - `.github/workflows/release-macos.yml`
   - `scripts/build.sh`

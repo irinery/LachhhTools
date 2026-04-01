@@ -56,7 +56,7 @@ O projeto agora possui pipelines separadas por plataforma em:
 - `.github/workflows/build-macos.yml`
 
 Observação de isolamento:
-- O CI de macOS roda em `push`/`pull_request` apenas quando houver mudança em:
+- O CI de macOS não roda em PR; ele roda em `push` para `main/master` (ou manual) quando houver mudança em:
   - `.github/workflows/build-macos.yml`
   - `.github/workflows/release-macos.yml`
   - `scripts/build.sh`
