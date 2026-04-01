@@ -41,22 +41,23 @@ Exemplo para gerar build local macOS da versão `v0.0.1`:
 APP_VERSION=0.0.1 ./scripts/build.sh
 ```
 
-Exemplo para gerar build local Windows da versão `v1.0.3`:
+Exemplo para gerar build local Windows da versão `v1.0.4`:
 
 ```powershell
-$env:APP_VERSION="1.0.3"
+$env:APP_VERSION="1.0.4"
 .\scripts\build.ps1
 ```
 
 ## CI/CD em GitHub Actions
 
-O projeto agora possui pipeline paralela para Windows e macOS em:
+O projeto agora possui pipelines separadas por plataforma em:
 
 - `.github/workflows/build-windows.yml`
+- `.github/workflows/build-macos.yml`
 
 Versões fixas por plataforma no CI:
 
-- Windows: `v1.0.3`
+- Windows: `v1.0.4`
 - macOS: `v0.0.1`
 
 Smoke test de integração automatizado em cada job:
@@ -66,14 +67,14 @@ Smoke test de integração automatizado em cada job:
 
 ## Release por plataforma (tags)
 
-Windows (mantido em `v1.0.3`):
+Windows (tag padrão `vX.Y.Z`, exemplo atual `v1.0.4`):
 
 ```bash
-git tag -a v1.0.3 -m "Release Windows v1.0.3"
-git push origin v1.0.3
+git tag -a v1.0.4 -m "Release Windows v1.0.4"
+git push origin v1.0.4
 ```
 
-macOS (nova release `v0.0.1` via tag `v0.0.1-mac`):
+macOS (tag padrão `vX.Y.Z-mac`, exemplo `v0.0.1-mac`):
 
 ```bash
 git tag -a v0.0.1-mac -m "Release macOS v0.0.1"
@@ -83,13 +84,13 @@ git push origin v0.0.1-mac
 Fluxos de release:
 
 - `.github/workflows/release-windows.yml` (asset `LachhhTools.exe`)
-- `.github/workflows/release-macos.yml` (asset `LachhhTools-macOS-v0.0.1.zip`)
+- `.github/workflows/release-macos.yml` (asset `LachhhTools-macOS-vX.Y.Z.zip`)
 
 Comandos legados por tag (exemplo):
 
 ```bash
-git tag -a v1.0.2 -m "Release v1.0.2"
-git push origin v1.0.2
+git tag -a v1.0.4 -m "Release Windows v1.0.4"
+git push origin v1.0.4
 ```
 
 Consulte também:
