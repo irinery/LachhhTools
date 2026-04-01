@@ -10,6 +10,7 @@ $BinDir = Join-Path $RootDir "bin"
 $BuildDir = Join-Path $RootDir "build"
 $CertDir = Join-Path $BuildDir "certs"
 $InstallersDir = Join-Path $RootDir "installers"
+$ReportDir = Join-Path $BuildDir "reports"
 $DescriptorTemplate = Join-Path $RootDir "scripts/air-descriptor.template.xml"
 $DescriptorPath = Join-Path $BinDir "TwitchGiveawayTool-app.xml"
 $OutputSwf = Join-Path $BinDir "TwitchGiveawayTool.swf"
@@ -50,7 +51,7 @@ if ($PackageTarget -eq "auto") {
     if ($IsMacOS) { $PackageTarget = "bundle" } else { $PackageTarget = "native" }
 }
 
-New-Item -ItemType Directory -Force -Path $BinDir, $BuildDir, $CertDir, $InstallersDir | Out-Null
+New-Item -ItemType Directory -Force -Path $BinDir, $BuildDir, $CertDir, $InstallersDir, $ReportDir | Out-Null
 
 if (-not (Test-Path $WidgetOutput) -and (Test-Path $WidgetSource)) {
     Copy-Item $WidgetSource $WidgetOutput -Force
@@ -110,17 +111,17 @@ switch ($PackageTarget) {
     default { throw "PACKAGE_TARGET invalido: $PackageTarget (use bundle|native|air|auto)." }
 }
 
-Write-Host "Validando arquivos (Pre-empacotamento)..."
-$BuildAssets = @(
-    $OutputSwf,
-    $WidgetOutput,
-    (Join-Path $BinIcons "Logos16.png")
-)
-foreach ($asset in $BuildAssets) {
-    if (-not (Test-Path $asset)) {
-        throw "ERRO FATAL: Asset obrigatorio nao encontrado antes do empacotamento: $asset"
-    }
+Write-Host "Validando arquivos e consistencia de assets (Pre-empacotamento)..."
+$ValidationScript = Join-Path $PSScriptRoot "validate-windows-assets.ps1"
+if (-not (Test-Path $ValidationScript)) {
+    throw "Script de validacao nao encontrado: $ValidationScript"
 }
+& $ValidationScript `
+    -RootDir "$RootDir" `
+    -BinDir "$BinDir" `
+    -DescriptorPath "$DescriptorPath" `
+    -ReportDir "$ReportDir"
+if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
 Write-Host "Empacotando aplicacao ($PackageTarget)..."
 & $Adt -package `
