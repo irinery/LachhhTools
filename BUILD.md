@@ -32,25 +32,53 @@ Saídas:
 - SWF: `bin/TwitchGiveawayTool.swf`
 - Pacote: `installers/LachhhTools.exe`
 
-## Release versionada (WINDOWS APENAS)
+## CI paralela (Windows + macOS)
 
-Este projeto tem workflow de release por tag em:
+Workflow:
+- `.github/workflows/build-windows.yml`
+
+Características:
+- Matrix com `windows-latest` + `macos-latest`
+- Build Windows via `scripts/build.ps1`
+- Build macOS via `scripts/build.sh`
+- Smoke test de integração automatizado por plataforma
+  - Windows: `installers/LachhhTools.exe` + `bin/TwitchGiveawayTool.swf`
+  - macOS: `installers/LachhhTools.app` + `bin/TwitchGiveawayTool.swf`
+
+Versões fixas no CI:
+- Windows: `APP_VERSION=1.0.3`
+- macOS: `APP_VERSION=0.0.1`
+
+## Release versionada (separada por plataforma)
+
+Este projeto tem workflows de release por tag em:
 - `.github/workflows/release-windows.yml`
+- `.github/workflows/release-macos.yml`
 
-Ele publica release **somente para Windows** com download de:
-- `LachhhTools.exe`
+Eles publicam releases separadas:
+- Windows (`v1.0.3`): `LachhhTools.exe`
+- macOS (`v0.0.1-mac`): `LachhhTools-macOS-v0.0.1.zip`
 
-Como gerar uma release:
+Como gerar as releases:
 
 ```bash
-git tag -a v1.0.2 -m "Release v1.0.2"
-git push origin v1.0.2
+git tag -a v1.0.3 -m "Release Windows v1.0.3"
+git push origin v1.0.3
+
+git tag -a v0.0.1-mac -m "Release macOS v0.0.1"
+git push origin v0.0.1-mac
 ```
 
 Resultado:
-- A Action roda no `windows-latest`
-- Gera o executável via `scripts/build.ps1`
-- Cria a GitHub Release com o asset `installers/LachhhTools.exe`
+- Windows:
+  - A Action roda no `windows-latest`
+  - Gera o executável via `scripts/build.ps1`
+  - Cria release com asset `installers/LachhhTools.exe`
+- macOS:
+  - A Action roda no `macos-latest`
+  - Gera o bundle via `scripts/build.sh` (`PACKAGE_TARGET=bundle`)
+  - Compacta `.app` para `.zip`
+  - Cria release com asset `installers/LachhhTools-macOS-v0.0.1.zip`
 
 ## macOS
 

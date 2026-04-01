@@ -1,4 +1,4 @@
-name: Windows Build
+name: CI Build (Windows + macOS)
 
 on:
   push:
@@ -9,7 +9,20 @@ on:
 
 jobs:
   build:
-    runs-on: windows-latest
+    name: Build (${{ matrix.platform.name }})
+    runs-on: ${{ matrix.platform.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        platform:
+          - name: Windows
+            runner: windows-latest
+            app_version: "1.0.3"
+            artifact_name: LachhhTools-Windows
+          - name: macOS
+            runner: macos-latest
+            app_version: "0.0.1"
+            artifact_name: LachhhTools-macOS
 
     steps:
       - name: Checkout repository
@@ -27,15 +40,54 @@ jobs:
           air-version: '50.2.4.2' # Versão recente do AIR SDK
           accept-license: true
 
-      - name: Build Application
+      - name: Build Application (Windows)
+        if: matrix.platform.runner == 'windows-latest'
         shell: powershell
+        env:
+          APP_VERSION: ${{ matrix.platform.app_version }}
         run: |
           .\scripts\build.ps1
 
-      - name: Upload Artifacts
+      - name: Build Application (macOS)
+        if: matrix.platform.runner == 'macos-latest'
+        shell: bash
+        env:
+          APP_VERSION: ${{ matrix.platform.app_version }}
+        run: |
+          ./scripts/build.sh
+
+      - name: Integration Smoke Test (Windows Artifacts)
+        if: matrix.platform.runner == 'windows-latest'
+        shell: powershell
+        run: |
+          $required = @(".\bin\TwitchGiveawayTool.swf", ".\installers\LachhhTools.exe")
+          foreach ($path in $required) {
+            if (-not (Test-Path $path)) {
+              throw "Arquivo obrigatório ausente no smoke test: $path"
+            }
+          }
+
+      - name: Integration Smoke Test (macOS Artifacts)
+        if: matrix.platform.runner == 'macos-latest'
+        shell: bash
+        run: |
+          test -f "./bin/TwitchGiveawayTool.swf"
+          test -d "./installers/LachhhTools.app"
+
+      - name: Upload Artifacts (Windows)
+        if: matrix.platform.runner == 'windows-latest'
         uses: actions/upload-artifact@v4
         with:
-          name: LachhhTools-Windows
+          name: ${{ matrix.platform.artifact_name }}
           path: |
             bin/TwitchGiveawayTool.swf
             installers/LachhhTools.exe
+
+      - name: Upload Artifacts (macOS)
+        if: matrix.platform.runner == 'macos-latest'
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.platform.artifact_name }}
+          path: |
+            bin/TwitchGiveawayTool.swf
+            installers/LachhhTools.app

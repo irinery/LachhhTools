@@ -3,7 +3,7 @@ name: Release Windows (EXE)
 on:
   push:
     tags:
-      - "v*.*.*"
+      - "v1.0.3"
 
 permissions:
   contents: write
@@ -11,6 +11,7 @@ permissions:
 jobs:
   release-windows:
     name: Build + Release (Windows Only)
+    if: ${{ !endsWith(github.ref_name, '-mac') }}
     runs-on: windows-latest
 
     steps:
