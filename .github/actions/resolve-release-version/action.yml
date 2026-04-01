@@ -1,0 +1,174 @@
+name: Resolve Release Version
+description: Resolve preview and official release versions from PR labels and stable tags.
+
+inputs:
+  labels_json:
+    description: JSON array containing PR labels.
+    required: false
+    default: "[]"
+  pr_number:
+    description: Pull request number for preview artifact naming.
+    required: false
+    default: ""
+  sha:
+    description: Commit SHA used for preview context and rerun-safe release reuse.
+    required: false
+    default: ""
+  preview_mode:
+    description: Set to true for preview artifacts and false for official merge releases.
+    required: false
+    default: "true"
+
+outputs:
+  app_version:
+    description: Version number without the v prefix.
+    value: ${{ steps.resolve.outputs.app_version }}
+  windows_tag:
+    description: Version tag for Windows release.
+    value: ${{ steps.resolve.outputs.windows_tag }}
+  mac_tag:
+    description: Version tag for macOS release.
+    value: ${{ steps.resolve.outputs.mac_tag }}
+  artifact_suffix:
+    description: Suffix used for preview or official artifacts.
+    value: ${{ steps.resolve.outputs.artifact_suffix }}
+  is_preview:
+    description: Whether the resolved version is for preview artifacts.
+    value: ${{ steps.resolve.outputs.is_preview }}
+  bump:
+    description: SemVer bump selected from PR labels.
+    value: ${{ steps.resolve.outputs.bump }}
+  latest_tag:
+    description: Latest stable tag considered for the calculation.
+    value: ${{ steps.resolve.outputs.latest_tag }}
+  reused_existing_tag:
+    description: Whether an existing tag pointing at the target SHA was reused.
+    value: ${{ steps.resolve.outputs.reused_existing_tag }}
+
+runs:
+  using: composite
+  steps:
+    - id: resolve
+      shell: bash
+      env:
+        LABELS_JSON: ${{ inputs.labels_json }}
+        PR_NUMBER: ${{ inputs.pr_number }}
+        SHA: ${{ inputs.sha }}
+        PREVIEW_MODE: ${{ inputs.preview_mode }}
+      run: |
+        set -euo pipefail
+
+        normalize_version_from_tag() {
+          local tag_name="$1"
+          tag_name="${tag_name#v}"
+          tag_name="${tag_name%-mac}"
+          printf '%s' "$tag_name"
+        }
+
+        tag_points_at_sha() {
+          local tag_name="$1"
+          local target_sha="$2"
+          [[ -n "${target_sha}" ]] || return 1
+          [[ "$(git rev-list -n 1 "${tag_name}" 2>/dev/null || true)" == "${target_sha}" ]]
+        }
+
+        git fetch --force --tags origin
+
+        bump="patch"
+        case "${LABELS_JSON}" in
+          *'"semver:major"'*)
+            bump="major"
+            ;;
+          *'"semver:minor"'*)
+            bump="minor"
+            ;;
+          *'"semver:patch"'*)
+            bump="patch"
+            ;;
+        esac
+
+        latest_tag="$(git tag --list --sort=-v:refname | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' | head -n 1 || true)"
+        if [[ -z "${latest_tag}" ]]; then
+          latest_tag="v0.0.0"
+        fi
+
+        reused_existing_tag="false"
+        existing_version=""
+
+        if [[ "${PREVIEW_MODE}" != "true" && -n "${SHA}" ]]; then
+          while IFS= read -r tag_name; do
+            [[ -n "${tag_name}" ]] || continue
+            if tag_points_at_sha "${tag_name}" "${SHA}"; then
+              existing_version="$(normalize_version_from_tag "${tag_name}")"
+              reused_existing_tag="true"
+              break
+            fi
+          done < <(git tag --list | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' | sort -V)
+
+          if [[ -z "${existing_version}" ]]; then
+            while IFS= read -r tag_name; do
+              [[ -n "${tag_name}" ]] || continue
+              if tag_points_at_sha "${tag_name}" "${SHA}"; then
+                existing_version="$(normalize_version_from_tag "${tag_name}")"
+                reused_existing_tag="true"
+                break
+              fi
+            done < <(git tag --list | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+-mac$' | sort -V)
+          fi
+        fi
+
+        if [[ -n "${existing_version}" ]]; then
+          app_version="${existing_version}"
+          latest_tag="v${existing_version}"
+        else
+          raw_version="${latest_tag#v}"
+          IFS='.' read -r major minor patch <<< "${raw_version}"
+
+          case "${bump}" in
+            major)
+              major=$((major + 1))
+              minor=0
+              patch=0
+              ;;
+            minor)
+              minor=$((minor + 1))
+              patch=0
+              ;;
+            patch)
+              patch=$((patch + 1))
+              ;;
+            *)
+              echo "Bump invalido: ${bump}"
+              exit 1
+              ;;
+          esac
+
+          app_version="${major}.${minor}.${patch}"
+        fi
+
+        windows_tag="v${app_version}"
+        mac_tag="${windows_tag}-mac"
+
+        short_sha="${SHA:0:7}"
+        if [[ "${PREVIEW_MODE}" == "true" ]]; then
+          is_preview="true"
+          if [[ -n "${PR_NUMBER}" ]]; then
+            artifact_suffix="pr-${PR_NUMBER}-v${app_version}-preview"
+          else
+            artifact_suffix="commit-${short_sha:-unknown}-v${app_version}-preview"
+          fi
+        else
+          is_preview="false"
+          artifact_suffix="v${app_version}"
+        fi
+
+        {
+          echo "app_version=${app_version}"
+          echo "windows_tag=${windows_tag}"
+          echo "mac_tag=${mac_tag}"
+          echo "artifact_suffix=${artifact_suffix}"
+          echo "is_preview=${is_preview}"
+          echo "bump=${bump}"
+          echo "latest_tag=${latest_tag}"
+          echo "reused_existing_tag=${reused_existing_tag}"
+        } >> "${GITHUB_OUTPUT}"
