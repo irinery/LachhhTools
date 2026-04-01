@@ -59,6 +59,7 @@ Versões fixas no CI:
 Este projeto tem workflows de release por tag em:
 - `.github/workflows/release-windows.yml`
 - `.github/workflows/release-macos.yml`
+- `.github/workflows/auto-tag-release.yml` (orquestrador de tags)
 
 Padrões de tag:
 - Windows: `vX.Y.Z` (ex.: `v1.0.4`)
@@ -68,15 +69,23 @@ Eles publicam releases separadas:
 - Windows: `LachhhTools.exe`
 - macOS: `LachhhTools-macOS-vX.Y.Z.zip`
 
-Como gerar as releases:
+Como funciona no merge de PR para `master`:
 
-```bash
-git tag -a v1.0.4 -m "Release Windows v1.0.4"
-git push origin v1.0.4
+- `auto-tag-release.yml` roda em `pull_request.closed` com PR merged em `master`
+- calcula a próxima versão usando labels do PR:
+  - `semver:major`
+  - `semver:minor`
+  - `semver:patch`
+- conflito de labels: maior impacto vence (`major > minor > patch`)
+- sem label: bump `patch`
+- cria as tags no `merge_commit_sha`:
+  - `vX.Y.Z` (Windows)
+  - `vX.Y.Z-mac` (macOS)
+- rerun idempotente:
+  - se as duas tags já existem, finaliza com sucesso sem duplicar
+  - se só uma tag existir, cria apenas a faltante
 
-git tag -a v0.0.1-mac -m "Release macOS v0.0.1"
-git push origin v0.0.1-mac
-```
+Release manual por tag continua possível (fallback operacional), seguindo os padrões acima.
 
 Resultado:
 - Windows:

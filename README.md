@@ -71,33 +71,37 @@ Smoke test de integração automatizado em cada job:
 - Valida build + empacotamento
 - Falha se artefatos obrigatórios não forem gerados
 
-## Release por plataforma (tags)
+## Release por plataforma (automática no merge)
 
-Windows (tag padrão `vX.Y.Z`, exemplo atual `v1.0.4`):
+O versionamento/release é orquestrado automaticamente em merge de PR para `master`:
 
-```bash
-git tag -a v1.0.4 -m "Release Windows v1.0.4"
-git push origin v1.0.4
-```
+- `.github/workflows/auto-tag-release.yml`
 
-macOS (tag padrão `vX.Y.Z-mac`, exemplo `v0.0.1-mac`):
+Regras SemVer por label no PR:
 
-```bash
-git tag -a v0.0.1-mac -m "Release macOS v0.0.1"
-git push origin v0.0.1-mac
-```
+- `semver:major`
+- `semver:minor`
+- `semver:patch`
 
-Fluxos de release:
+Resolução de conflito de labels:
+
+- maior impacto vence: `major > minor > patch`
+- sem label: default `patch`
+
+Tags geradas automaticamente:
+
+- Windows: `vX.Y.Z`
+- macOS: `vX.Y.Z-mac`
+
+Workflows de publicação por plataforma:
 
 - `.github/workflows/release-windows.yml` (asset `LachhhTools.exe`)
 - `.github/workflows/release-macos.yml` (asset `LachhhTools-macOS-vX.Y.Z.zip`)
 
-Comandos legados por tag (exemplo):
+Comportamento em rerun (idempotente):
 
-```bash
-git tag -a v1.0.4 -m "Release Windows v1.0.4"
-git push origin v1.0.4
-```
+- se ambas as tags já existem, o workflow encerra com sucesso sem duplicar release/tag
+- se apenas uma existir, cria apenas a tag faltante
 
 Consulte também:
 
