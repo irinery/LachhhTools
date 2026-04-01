@@ -41,7 +41,10 @@ Workflows:
 Características:
 - Windows e macOS rodam em workflows independentes
 - Build Windows via `scripts/build.ps1`
-- Build macOS via `scripts/build.sh`
+- Build macOS via `scripts/build.sh` com gatilho por `paths`:
+  - `.github/workflows/build-macos.yml`
+  - `.github/workflows/release-macos.yml`
+  - `scripts/build.sh`
 - Smoke test de integração automatizado por plataforma
   - Windows: `installers/LachhhTools.exe` + `bin/TwitchGiveawayTool.swf`
   - macOS: `installers/LachhhTools.app` + `bin/TwitchGiveawayTool.swf`
