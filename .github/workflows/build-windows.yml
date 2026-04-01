@@ -48,6 +48,14 @@ jobs:
         run: |
           .\scripts\build.ps1
 
+      - name: Validate Windows Build Assets (Explicit Gate)
+        if: matrix.platform.runner == 'windows-latest'
+        shell: powershell
+        run: |
+          .\scripts\validate-windows-assets.ps1 `
+            -RootDir "$PWD" `
+            -ReportDir ".\build\reports"
+
       - name: Build Application (macOS)
         if: matrix.platform.runner == 'macos-latest'
         shell: bash
@@ -60,12 +68,29 @@ jobs:
         if: matrix.platform.runner == 'windows-latest'
         shell: powershell
         run: |
-          $required = @(".\bin\TwitchGiveawayTool.swf", ".\installers\LachhhTools.exe")
+          $required = @(
+            ".\bin\TwitchGiveawayTool.swf",
+            ".\installers\LachhhTools.exe",
+            ".\build\reports\windows-assets-validation.json",
+            ".\build\reports\windows-assets-validation.txt"
+          )
           foreach ($path in $required) {
             if (-not (Test-Path $path)) {
               throw "Arquivo obrigatório ausente no smoke test: $path"
             }
           }
+          $exeSize = (Get-Item ".\installers\LachhhTools.exe").Length
+          if ($exeSize -le 1MB) {
+            throw "Executável com tamanho inesperado (<= 1MB): $exeSize bytes"
+          }
+
+      - name: Critical Smoke Test (Windows Flow)
+        if: matrix.platform.runner == 'windows-latest'
+        shell: powershell
+        run: |
+          .\scripts\windows-critical-smoke.ps1 `
+            -RootDir "$PWD" `
+            -ValidationReportPath ".\build\reports\windows-assets-validation.json"
 
       - name: Integration Smoke Test (macOS Artifacts)
         if: matrix.platform.runner == 'macos-latest'
@@ -82,6 +107,10 @@ jobs:
           path: |
             bin/TwitchGiveawayTool.swf
             installers/LachhhTools.exe
+            build/reports/windows-assets-validation.json
+            build/reports/windows-assets-validation.txt
+            build/reports/windows-critical-smoke.json
+            build/reports/windows-critical-smoke.txt
 
       - name: Upload Artifacts (macOS)
         if: matrix.platform.runner == 'macos-latest'

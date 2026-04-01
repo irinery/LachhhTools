@@ -4,12 +4,14 @@ package com.giveawaytool {
 	import com.giveawaytool.scenes.GameSceneManager;
 	import com.giveawaytool.ui.UI_LoterySpin;
 	import com.giveawaytool.ui.UI_PopUp;
+	import com.lachhh.ResolutionManager;
 	import com.lachhh.flash.debug.UIFontLoopkup;
 	import com.lachhh.io.KeyManager;
 	import com.lachhh.lachhhengine.VersionInfo;
 	import com.lachhh.lachhhengine.actor.Actor;
 	import com.lachhh.lachhhengine.ui.UIBase;
 
+	import flash.display.StageAlign;
 	import flash.display.StageScaleMode;
 	import flash.events.Event;
 	import flash.net.URLLoader;
@@ -32,8 +34,10 @@ package com.giveawaytool {
 			UIBase.manager.add(dummyActor);
 						
 			stage.scaleMode = StageScaleMode.NO_SCALE;
-			stage.align = flash.display.StageAlign.TOP_LEFT;
+			stage.align = StageAlign.TOP_LEFT;
 			stage.color = 0x000000;
+			stage.addEventListener(Event.RESIZE, onStageResize, false, 0, true);
+			applyFixedLayout();
 			
 			new UIFontLoopkup();
 			
@@ -59,6 +63,30 @@ package com.giveawaytool {
 			super.update();
 			gameSceneManager.update();
 			KeyManager.update();
+		}
+
+		private function onStageResize(event:Event):void {
+			applyFixedLayout();
+		}
+
+		// Mantém viewport lógico fixo (1280x720) centralizado em qualquer resolução.
+		private function applyFixedLayout():void {
+			if(stage == null) return;
+
+			var baseWidth:Number = ResolutionManager.getGameWidth();
+			var baseHeight:Number = ResolutionManager.getGameHeight();
+			var stageWidth:Number = stage.stageWidth;
+			var stageHeight:Number = stage.stageHeight;
+			var scale:Number = Math.min(stageWidth / baseWidth, stageHeight / baseHeight);
+
+			if(isNaN(scale) || !isFinite(scale) || scale <= 0) {
+				scale = 1;
+			}
+
+			this.scaleX = scale;
+			this.scaleY = scale;
+			this.x = Math.round((stageWidth - (baseWidth * scale)) * 0.5);
+			this.y = Math.round((stageHeight - (baseHeight * scale)) * 0.5);
 		}
 		
 		
