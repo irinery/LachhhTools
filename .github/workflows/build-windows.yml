@@ -1,4 +1,4 @@
-name: CI Build (Windows + macOS)
+name: CI Build (Windows)
 
 on:
   push:
@@ -8,21 +8,9 @@ on:
   workflow_dispatch:
 
 jobs:
-  build:
-    name: Build (${{ matrix.platform.name }})
-    runs-on: ${{ matrix.platform.runner }}
-    strategy:
-      fail-fast: false
-      matrix:
-        platform:
-          - name: Windows
-            runner: windows-latest
-            app_version: "1.0.3"
-            artifact_name: LachhhTools-Windows
-          - name: macOS
-            runner: macos-latest
-            app_version: "0.0.1"
-            artifact_name: LachhhTools-macOS
+  build-windows:
+    name: Build + Validate (Windows)
+    runs-on: windows-latest
 
     steps:
       - name: Checkout repository
@@ -31,41 +19,30 @@ jobs:
       - name: Setup Java
         uses: actions/setup-java@v4
         with:
-          distribution: 'temurin'
-          java-version: '11'
+          distribution: "temurin"
+          java-version: "11"
 
       - name: Setup HARMAN AIR SDK
         uses: joshtynjala/setup-adobe-air-action@v2
         with:
-          air-version: '50.2.4.2' # Versão recente do AIR SDK
+          air-version: "50.2.4.2"
           accept-license: true
 
       - name: Build Application (Windows)
-        if: matrix.platform.runner == 'windows-latest'
         shell: powershell
         env:
-          APP_VERSION: ${{ matrix.platform.app_version }}
+          APP_VERSION: "1.0.4"
         run: |
           .\scripts\build.ps1
 
       - name: Validate Windows Build Assets (Explicit Gate)
-        if: matrix.platform.runner == 'windows-latest'
         shell: powershell
         run: |
           .\scripts\validate-windows-assets.ps1 `
             -RootDir "$PWD" `
             -ReportDir ".\build\reports"
 
-      - name: Build Application (macOS)
-        if: matrix.platform.runner == 'macos-latest'
-        shell: bash
-        env:
-          APP_VERSION: ${{ matrix.platform.app_version }}
-        run: |
-          ./scripts/build.sh
-
       - name: Integration Smoke Test (Windows Artifacts)
-        if: matrix.platform.runner == 'windows-latest'
         shell: powershell
         run: |
           $required = @(
@@ -85,25 +62,16 @@ jobs:
           }
 
       - name: Critical Smoke Test (Windows Flow)
-        if: matrix.platform.runner == 'windows-latest'
         shell: powershell
         run: |
           .\scripts\windows-critical-smoke.ps1 `
             -RootDir "$PWD" `
             -ValidationReportPath ".\build\reports\windows-assets-validation.json"
 
-      - name: Integration Smoke Test (macOS Artifacts)
-        if: matrix.platform.runner == 'macos-latest'
-        shell: bash
-        run: |
-          test -f "./bin/TwitchGiveawayTool.swf"
-          test -d "./installers/LachhhTools.app"
-
       - name: Upload Artifacts (Windows)
-        if: matrix.platform.runner == 'windows-latest'
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ matrix.platform.artifact_name }}
+          name: LachhhTools-Windows
           path: |
             bin/TwitchGiveawayTool.swf
             installers/LachhhTools.exe
@@ -111,12 +79,3 @@ jobs:
             build/reports/windows-assets-validation.txt
             build/reports/windows-critical-smoke.json
             build/reports/windows-critical-smoke.txt
-
-      - name: Upload Artifacts (macOS)
-        if: matrix.platform.runner == 'macos-latest'
-        uses: actions/upload-artifact@v4
-        with:
-          name: ${{ matrix.platform.artifact_name }}
-          path: |
-            bin/TwitchGiveawayTool.swf
-            installers/LachhhTools.app

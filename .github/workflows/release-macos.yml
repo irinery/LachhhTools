@@ -3,7 +3,7 @@ name: Release macOS (.app)
 on:
   push:
     tags:
-      - "v0.0.1-mac"
+      - "v*-mac"
 
 permissions:
   contents: write
@@ -28,6 +28,15 @@ jobs:
         with:
           air-version: "50.2.4.2"
           accept-license: true
+
+      - name: Validate macOS Tag Format
+        shell: bash
+        run: |
+          TAG="${GITHUB_REF_NAME}"
+          if [[ ! "${TAG}" =~ ^v[0-9]+\.[0-9]+\.[0-9]+-mac$ ]]; then
+            echo "Tag inválida para release macOS: ${TAG} (esperado: vX.Y.Z-mac)"
+            exit 1
+          fi
 
       - name: Resolve Version from Tag
         id: version

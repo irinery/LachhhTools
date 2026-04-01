@@ -3,7 +3,9 @@ name: Release Windows (EXE)
 on:
   push:
     tags:
-      - "v1.0.3"
+      - "v*"
+    tags-ignore:
+      - "*-mac"
 
 permissions:
   contents: write
@@ -11,7 +13,6 @@ permissions:
 jobs:
   release-windows:
     name: Build + Release (Windows Only)
-    if: ${{ !endsWith(github.ref_name, '-mac') }}
     runs-on: windows-latest
 
     steps:
@@ -29,6 +30,14 @@ jobs:
         with:
           air-version: "50.2.4.2"
           accept-license: true
+
+      - name: Validate Windows Tag Format
+        shell: powershell
+        run: |
+          $Tag = "${{ github.ref_name }}"
+          if ($Tag -notmatch '^v\d+\.\d+\.\d+$') {
+            throw "Tag inválida para release Windows: $Tag (esperado: vX.Y.Z)"
+          }
 
       - name: Resolve Version from Tag
         id: version

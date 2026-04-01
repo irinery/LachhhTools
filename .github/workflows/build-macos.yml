@@ -1,0 +1,53 @@
+name: CI Build (macOS)
+
+on:
+  push:
+    branches: [ "main", "master" ]
+    paths:
+      - ".github/workflows/build-macos.yml"
+      - ".github/workflows/release-macos.yml"
+      - "scripts/build.sh"
+  workflow_dispatch:
+
+jobs:
+  build-macos:
+    name: Build + Validate (macOS)
+    runs-on: macos-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: "temurin"
+          java-version: "11"
+
+      - name: Setup HARMAN AIR SDK
+        uses: joshtynjala/setup-adobe-air-action@v2
+        with:
+          air-version: "50.2.4.2"
+          accept-license: true
+
+      - name: Build Application (macOS)
+        shell: bash
+        env:
+          APP_VERSION: "0.0.1"
+          PACKAGE_TARGET: bundle
+        run: |
+          ./scripts/build.sh
+
+      - name: Integration Smoke Test (macOS Artifacts)
+        shell: bash
+        run: |
+          test -f "./bin/TwitchGiveawayTool.swf"
+          test -d "./installers/LachhhTools.app"
+
+      - name: Upload Artifacts (macOS)
+        uses: actions/upload-artifact@v4
+        with:
+          name: LachhhTools-macOS
+          path: |
+            bin/TwitchGiveawayTool.swf
+            installers/LachhhTools.app
