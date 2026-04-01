@@ -1,0 +1,369 @@
+name: Release On Merge
+
+on:
+  pull_request:
+    types:
+      - closed
+
+permissions:
+  contents: write
+  pull-requests: read
+
+concurrency:
+  group: release-on-merge-master
+  cancel-in-progress: false
+
+jobs:
+  prepare-release:
+    name: Resolve Release Version
+    if: >
+      github.event.pull_request.merged == true &&
+      github.event.pull_request.base.ref == 'master'
+    runs-on: ubuntu-latest
+    outputs:
+      merge_sha: ${{ steps.context.outputs.merge_sha }}
+      app_version: ${{ steps.version.outputs.app_version }}
+      windows_tag: ${{ steps.version.outputs.windows_tag }}
+      mac_tag: ${{ steps.version.outputs.mac_tag }}
+      artifact_suffix: ${{ steps.version.outputs.artifact_suffix }}
+      reused_existing_tag: ${{ steps.version.outputs.reused_existing_tag }}
+
+    steps:
+      - name: Resolve merge commit SHA
+        id: context
+        run: |
+          merge_sha="${{ github.event.pull_request.merge_commit_sha }}"
+          if [[ -z "${merge_sha}" ]]; then
+            echo "merge_commit_sha ausente no evento."
+            exit 1
+          fi
+          echo "merge_sha=${merge_sha}" >> "${GITHUB_OUTPUT}"
+
+      - name: Checkout merge commit
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ steps.context.outputs.merge_sha }}
+          fetch-depth: 0
+
+      - name: Resolve release version
+        id: version
+        uses: ./.github/actions/resolve-release-version
+        with:
+          labels_json: ${{ toJson(github.event.pull_request.labels.*.name) }}
+          pr_number: ${{ github.event.pull_request.number }}
+          sha: ${{ steps.context.outputs.merge_sha }}
+          preview_mode: "false"
+
+      - name: Release summary
+        run: |
+          {
+            echo "## Release On Merge"
+            echo "- PR: #${{ github.event.pull_request.number }}"
+            echo "- Merge SHA: \`${{ steps.context.outputs.merge_sha }}\`"
+            echo "- App version: \`${{ steps.version.outputs.app_version }}\`"
+            echo "- Windows tag: \`${{ steps.version.outputs.windows_tag }}\`"
+            echo "- macOS tag: \`${{ steps.version.outputs.mac_tag }}\`"
+            echo "- Reused existing tag: \`${{ steps.version.outputs.reused_existing_tag }}\`"
+          } >> "${GITHUB_STEP_SUMMARY}"
+
+  build-windows-release:
+    name: Build + Validate (Windows Release)
+    needs: prepare-release
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout merge commit
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.prepare-release.outputs.merge_sha }}
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: "temurin"
+          java-version: "11"
+
+      - name: Setup HARMAN AIR SDK
+        uses: joshtynjala/setup-adobe-air-action@v2
+        with:
+          air-version: "50.2.4.2"
+          accept-license: true
+
+      - name: Build Windows executable
+        shell: powershell
+        env:
+          APP_VERSION: ${{ needs.prepare-release.outputs.app_version }}
+        run: |
+          .\scripts\build.ps1 -PackageTarget native
+          if (-not (Test-Path ".\installers\LachhhTools.exe")) {
+            throw "Executável não encontrado em installers/LachhhTools.exe"
+          }
+
+      - name: Validate Windows Build Assets (Explicit Gate)
+        shell: powershell
+        run: |
+          .\scripts\validate-windows-assets.ps1 `
+            -RootDir "$PWD" `
+            -ReportDir ".\build\reports"
+
+      - name: Integration Smoke Test (Windows Artifacts)
+        shell: powershell
+        run: |
+          $required = @(
+            ".\bin\TwitchGiveawayTool.swf",
+            ".\installers\LachhhTools.exe",
+            ".\build\reports\windows-assets-validation.json",
+            ".\build\reports\windows-assets-validation.txt"
+          )
+          foreach ($path in $required) {
+            if (-not (Test-Path $path)) {
+              throw "Arquivo obrigatório ausente no smoke test: $path"
+            }
+          }
+          $exeSize = (Get-Item ".\installers\LachhhTools.exe").Length
+          if ($exeSize -le 1MB) {
+            throw "Executável com tamanho inesperado (<= 1MB): $exeSize bytes"
+          }
+
+      - name: Critical Smoke Test (Windows Flow)
+        shell: powershell
+        run: |
+          .\scripts\windows-critical-smoke.ps1 `
+            -RootDir "$PWD" `
+            -ValidationReportPath ".\build\reports\windows-assets-validation.json"
+
+      - name: Create versioned Windows release asset
+        shell: powershell
+        env:
+          APP_VERSION: ${{ needs.prepare-release.outputs.app_version }}
+        run: |
+          $versionedExe = ".\installers\LachhhTools-Windows-v$env:APP_VERSION.exe"
+          Copy-Item ".\installers\LachhhTools.exe" $versionedExe -Force
+          if (-not (Test-Path $versionedExe)) {
+            throw "Executável versionado não encontrado: $versionedExe"
+          }
+
+      - name: Upload Windows release artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-windows-v${{ needs.prepare-release.outputs.app_version }}
+          path: |
+            installers/LachhhTools-Windows-v${{ needs.prepare-release.outputs.app_version }}.exe
+            build/reports/windows-assets-validation.json
+            build/reports/windows-assets-validation.txt
+            build/reports/windows-critical-smoke.json
+            build/reports/windows-critical-smoke.txt
+
+  build-macos-release:
+    name: Build + Validate (macOS Release)
+    needs: prepare-release
+    runs-on: macos-latest
+
+    steps:
+      - name: Checkout merge commit
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.prepare-release.outputs.merge_sha }}
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: "temurin"
+          java-version: "11"
+
+      - name: Setup HARMAN AIR SDK
+        uses: joshtynjala/setup-adobe-air-action@v2
+        with:
+          air-version: "50.2.4.2"
+          accept-license: true
+
+      - name: Build macOS bundle
+        shell: bash
+        env:
+          APP_VERSION: ${{ needs.prepare-release.outputs.app_version }}
+          PACKAGE_TARGET: bundle
+        run: |
+          ./scripts/build.sh
+          test -d "./installers/LachhhTools.app"
+          test -f "./bin/TwitchGiveawayTool.swf"
+
+      - name: Integration Smoke Test (macOS Artifacts)
+        shell: bash
+        run: |
+          test -f "./bin/TwitchGiveawayTool.swf"
+          test -d "./installers/LachhhTools.app"
+
+      - name: Archive macOS release asset
+        shell: bash
+        env:
+          APP_VERSION: ${{ needs.prepare-release.outputs.app_version }}
+        run: |
+          ditto -c -k --sequesterRsrc --keepParent \
+            "./installers/LachhhTools.app" \
+            "./installers/LachhhTools-macOS-v${APP_VERSION}.zip"
+          test -f "./installers/LachhhTools-macOS-v${APP_VERSION}.zip"
+
+      - name: Upload macOS release artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-macos-v${{ needs.prepare-release.outputs.app_version }}
+          path: |
+            installers/LachhhTools-macOS-v${{ needs.prepare-release.outputs.app_version }}.zip
+
+  publish-release:
+    name: Publish Tags + Releases
+    needs:
+      - prepare-release
+      - build-windows-release
+      - build-macos-release
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout merge commit
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.prepare-release.outputs.merge_sha }}
+          fetch-depth: 0
+
+      - name: Fetch tags
+        run: |
+          git fetch --force --tags origin
+
+      - name: Configure Git identity
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+      - name: Download Windows release artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: release-windows-v${{ needs.prepare-release.outputs.app_version }}
+          path: dist/windows
+
+      - name: Download macOS release artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: release-macos-v${{ needs.prepare-release.outputs.app_version }}
+          path: dist/macos
+
+      - name: Ensure release tags exist
+        env:
+          MERGE_SHA: ${{ needs.prepare-release.outputs.merge_sha }}
+          WINDOWS_TAG: ${{ needs.prepare-release.outputs.windows_tag }}
+          MAC_TAG: ${{ needs.prepare-release.outputs.mac_tag }}
+        run: |
+          set -euo pipefail
+
+          ensure_tag() {
+            local tag_name="$1"
+            local tag_message="$2"
+
+            if git ls-remote --tags --refs origin "refs/tags/${tag_name}" | grep -q .; then
+              echo "Tag ja existe no remoto: ${tag_name}"
+              return 0
+            fi
+
+            git tag -a "${tag_name}" "${MERGE_SHA}" -m "${tag_message}"
+
+            if git push origin "refs/tags/${tag_name}"; then
+              echo "Tag publicada: ${tag_name}"
+              return 0
+            fi
+
+            git fetch --force --tags origin
+            if git ls-remote --tags --refs origin "refs/tags/${tag_name}" | grep -q .; then
+              echo "Tag confirmada apos rechecagem: ${tag_name}"
+              return 0
+            fi
+
+            echo "Falha ao publicar a tag ${tag_name}"
+            exit 1
+          }
+
+          ensure_tag "${WINDOWS_TAG}" "Release Windows ${WINDOWS_TAG}"
+          ensure_tag "${MAC_TAG}" "Release macOS ${WINDOWS_TAG}"
+
+      - name: Publish platform releases
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPOSITORY: ${{ github.repository }}
+          MERGE_SHA: ${{ needs.prepare-release.outputs.merge_sha }}
+          APP_VERSION: ${{ needs.prepare-release.outputs.app_version }}
+          WINDOWS_TAG: ${{ needs.prepare-release.outputs.windows_tag }}
+          MAC_TAG: ${{ needs.prepare-release.outputs.mac_tag }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          set -euo pipefail
+
+          windows_file="$(find dist/windows -type f -name 'LachhhTools-Windows-v*.exe' | head -n 1)"
+          mac_file="$(find dist/macos -type f -name 'LachhhTools-macOS-v*.zip' | head -n 1)"
+
+          test -n "${windows_file}" && test -f "${windows_file}"
+          test -n "${mac_file}" && test -f "${mac_file}"
+
+          publish_release() {
+            local tag_name="$1"
+            local title="$2"
+            local body="$3"
+            local asset_file="$4"
+            local asset_name
+
+            asset_name="$(basename "${asset_file}")"
+
+            if ! gh release view "${tag_name}" --repo "${REPOSITORY}" >/dev/null 2>&1; then
+              gh release create "${tag_name}" "${asset_file}" \
+                --repo "${REPOSITORY}" \
+                --title "${title}" \
+                --notes "${body}" \
+                --target "${MERGE_SHA}"
+              echo "Release criada: ${tag_name}"
+              return 0
+            fi
+
+            if gh release view "${tag_name}" --repo "${REPOSITORY}" --json assets --jq '.assets[].name' | grep -Fxq "${asset_name}"; then
+              echo "Asset ja publicado em ${tag_name}: ${asset_name}"
+              return 0
+            fi
+
+            gh release edit "${tag_name}" \
+              --repo "${REPOSITORY}" \
+              --title "${title}" \
+              --notes "${body}"
+
+            gh release upload "${tag_name}" "${asset_file}" \
+              --repo "${REPOSITORY}" \
+              --clobber
+
+            echo "Asset publicado em ${tag_name}: ${asset_name}"
+          }
+
+          windows_body=$(cat <<EOF
+          Release gerada automaticamente a partir do merge do PR #${PR_NUMBER} em \`master\`.
+
+          WINDOWS APENAS:
+          - Versao da aplicacao: \`v${APP_VERSION}\`
+          - Arquivo para download: \`$(basename "${windows_file}")\`
+          EOF
+          )
+
+          mac_body=$(cat <<EOF
+          Release gerada automaticamente a partir do merge do PR #${PR_NUMBER} em \`master\`.
+
+          macOS APENAS:
+          - Versao da aplicacao: \`v${APP_VERSION}\`
+          - Arquivo para download: \`$(basename "${mac_file}")\`
+          EOF
+          )
+
+          publish_release "${WINDOWS_TAG}" "LachhhTools ${WINDOWS_TAG} (WINDOWS)" "${windows_body}" "${windows_file}"
+          publish_release "${MAC_TAG}" "LachhhTools v${APP_VERSION} (macOS)" "${mac_body}" "${mac_file}"
+
+      - name: Publish summary
+        run: |
+          {
+            echo "## Published Releases"
+            echo "- Windows tag: \`${{ needs.prepare-release.outputs.windows_tag }}\`"
+            echo "- macOS tag: \`${{ needs.prepare-release.outputs.mac_tag }}\`"
+            echo "- Windows asset: \`LachhhTools-Windows-v${{ needs.prepare-release.outputs.app_version }}.exe\`"
+            echo "- macOS asset: \`LachhhTools-macOS-v${{ needs.prepare-release.outputs.app_version }}.zip\`"
+          } >> "${GITHUB_STEP_SUMMARY}"
