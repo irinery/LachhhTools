@@ -1,17 +1,47 @@
-name: CI Build (macOS)
+name: CI Build (macOS Manual Preview)
 
 on:
-  push:
-    branches: [ "main", "master" ]
-    paths:
-      - ".github/workflows/build-macos.yml"
-      - ".github/workflows/release-macos.yml"
-      - "scripts/build.sh"
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 jobs:
+  prepare-version:
+    name: Resolve Preview Version
+    runs-on: ubuntu-latest
+    outputs:
+      app_version: ${{ steps.version.outputs.app_version }}
+      artifact_suffix: ${{ steps.version.outputs.artifact_suffix }}
+      mac_tag: ${{ steps.version.outputs.mac_tag }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Resolve preview version
+        id: version
+        uses: ./.github/actions/resolve-release-version
+        with:
+          labels_json: "[]"
+          pr_number: ""
+          sha: ${{ github.sha }}
+          preview_mode: "true"
+
+      - name: Preview summary
+        run: |
+          {
+            echo "## macOS Manual Preview"
+            echo "- App version: \`${{ steps.version.outputs.app_version }}\`"
+            echo "- macOS tag preview: \`${{ steps.version.outputs.mac_tag }}\`"
+            echo "- Artifact suffix: \`${{ steps.version.outputs.artifact_suffix }}\`"
+          } >> "${GITHUB_STEP_SUMMARY}"
+
   build-macos:
     name: Build + Validate (macOS)
+    needs: prepare-version
     runs-on: macos-latest
 
     steps:
@@ -30,10 +60,10 @@ jobs:
           air-version: "50.2.4.2"
           accept-license: true
 
-      - name: Build Application (macOS)
+      - name: Build Application (macOS Preview)
         shell: bash
         env:
-          APP_VERSION: "0.0.1"
+          APP_VERSION: ${{ needs.prepare-version.outputs.app_version }}
           PACKAGE_TARGET: bundle
         run: |
           ./scripts/build.sh
@@ -44,10 +74,20 @@ jobs:
           test -f "./bin/TwitchGiveawayTool.swf"
           test -d "./installers/LachhhTools.app"
 
-      - name: Upload Artifacts (macOS)
+      - name: Archive macOS preview bundle
+        shell: bash
+        env:
+          APP_VERSION: ${{ needs.prepare-version.outputs.app_version }}
+        run: |
+          ditto -c -k --sequesterRsrc --keepParent \
+            "./installers/LachhhTools.app" \
+            "./installers/LachhhTools-macOS-v${APP_VERSION}.zip"
+          test -f "./installers/LachhhTools-macOS-v${APP_VERSION}.zip"
+
+      - name: Upload Artifacts (macOS Preview)
         uses: actions/upload-artifact@v4
         with:
-          name: LachhhTools-macOS
+          name: LachhhTools-macOS-${{ needs.prepare-version.outputs.artifact_suffix }}
           path: |
             bin/TwitchGiveawayTool.swf
-            installers/LachhhTools.app
+            installers/LachhhTools-macOS-v${{ needs.prepare-version.outputs.app_version }}.zip

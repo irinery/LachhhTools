@@ -1,15 +1,52 @@
-name: CI Build (Windows)
+name: CI Build (Windows Preview)
 
 on:
-  push:
-    branches: [ "main", "master" ]
   pull_request:
     branches: [ "main", "master" ]
+  push:
+    branches-ignore: [ "main", "master" ]
   workflow_dispatch:
 
+permissions:
+  contents: read
+  pull-requests: read
+
 jobs:
+  prepare-version:
+    name: Resolve Preview Version
+    runs-on: ubuntu-latest
+    outputs:
+      app_version: ${{ steps.version.outputs.app_version }}
+      artifact_suffix: ${{ steps.version.outputs.artifact_suffix }}
+      windows_tag: ${{ steps.version.outputs.windows_tag }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Resolve preview version
+        id: version
+        uses: ./.github/actions/resolve-release-version
+        with:
+          labels_json: ${{ github.event_name == 'pull_request' && toJson(github.event.pull_request.labels.*.name) || '[]' }}
+          pr_number: ${{ github.event_name == 'pull_request' && github.event.pull_request.number || '' }}
+          sha: ${{ github.sha }}
+          preview_mode: "true"
+
+      - name: Preview summary
+        run: |
+          {
+            echo "## Windows Preview"
+            echo "- App version: \`${{ steps.version.outputs.app_version }}\`"
+            echo "- Windows tag preview: \`${{ steps.version.outputs.windows_tag }}\`"
+            echo "- Artifact suffix: \`${{ steps.version.outputs.artifact_suffix }}\`"
+          } >> "${GITHUB_STEP_SUMMARY}"
+
   build-windows:
     name: Build + Validate (Windows)
+    needs: prepare-version
     runs-on: windows-latest
 
     steps:
@@ -28,10 +65,10 @@ jobs:
           air-version: "50.2.4.2"
           accept-license: true
 
-      - name: Build Application (Windows)
+      - name: Build Application (Windows Preview)
         shell: powershell
         env:
-          APP_VERSION: "1.0.4"
+          APP_VERSION: ${{ needs.prepare-version.outputs.app_version }}
         run: |
           .\scripts\build.ps1
 
@@ -68,13 +105,24 @@ jobs:
             -RootDir "$PWD" `
             -ValidationReportPath ".\build\reports\windows-assets-validation.json"
 
-      - name: Upload Artifacts (Windows)
+      - name: Create versioned preview asset
+        shell: powershell
+        env:
+          APP_VERSION: ${{ needs.prepare-version.outputs.app_version }}
+        run: |
+          $versionedExe = ".\installers\LachhhTools-Windows-v$env:APP_VERSION.exe"
+          Copy-Item ".\installers\LachhhTools.exe" $versionedExe -Force
+          if (-not (Test-Path $versionedExe)) {
+            throw "Executável versionado não encontrado: $versionedExe"
+          }
+
+      - name: Upload Artifacts (Windows Preview)
         uses: actions/upload-artifact@v4
         with:
-          name: LachhhTools-Windows
+          name: LachhhTools-Windows-${{ needs.prepare-version.outputs.artifact_suffix }}
           path: |
             bin/TwitchGiveawayTool.swf
-            installers/LachhhTools.exe
+            installers/LachhhTools-Windows-v${{ needs.prepare-version.outputs.app_version }}.exe
             build/reports/windows-assets-validation.json
             build/reports/windows-assets-validation.txt
             build/reports/windows-critical-smoke.json

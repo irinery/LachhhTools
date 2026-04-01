@@ -35,36 +35,34 @@ Preencha:
 
 ## Build
 
-Exemplo para gerar build local macOS da versão `v0.0.1`:
+Exemplo para gerar build local macOS da versão `vX.Y.Z`:
 
 ```bash
-APP_VERSION=0.0.1 ./scripts/build.sh
+APP_VERSION=X.Y.Z ./scripts/build.sh
 ```
 
-Exemplo para gerar build local Windows da versão `v1.0.4`:
+Exemplo para gerar build local Windows da versão `vX.Y.Z`:
 
 ```powershell
-$env:APP_VERSION="1.0.4"
+$env:APP_VERSION="X.Y.Z"
 .\scripts\build.ps1
 ```
 
 ## CI/CD em GitHub Actions
 
-O projeto agora possui pipelines separadas por plataforma em:
+O projeto possui workflows separados para preview de CI e release oficial:
 
 - `.github/workflows/build-windows.yml`
 - `.github/workflows/build-macos.yml`
+- `.github/workflows/release-on-merge.yml`
 
-Observação de isolamento:
-- O CI de macOS não roda em PR; ele roda em `push` para `main/master` (ou manual) quando houver mudança em:
-  - `.github/workflows/build-macos.yml`
-  - `.github/workflows/release-macos.yml`
-  - `scripts/build.sh`
+Comportamento atual:
 
-Versões fixas por plataforma no CI:
-
-- Windows: `v1.0.4`
-- macOS: `v0.0.1`
+- `build-windows.yml` roda em PRs e em push fora de `main/master`
+- o preview de Windows resolve a próxima versão esperada via labels `semver:*`
+- o artifact de preview sobe com contexto do PR/commit, por exemplo `LachhhTools-Windows-pr-4-v1.0.6-preview`
+- `build-macos.yml` fica manual (`workflow_dispatch`) como fallback operacional
+- `release-on-merge.yml` roda no merge de PR para `master` e publica os artefatos oficiais
 
 Smoke test de integração automatizado em cada job:
 
@@ -75,7 +73,7 @@ Smoke test de integração automatizado em cada job:
 
 O versionamento/release é orquestrado automaticamente em merge de PR para `master`:
 
-- `.github/workflows/auto-tag-release.yml`
+- `.github/workflows/release-on-merge.yml`
 
 Regras SemVer por label no PR:
 
@@ -93,15 +91,15 @@ Tags geradas automaticamente:
 - Windows: `vX.Y.Z`
 - macOS: `vX.Y.Z-mac`
 
-Workflows de publicação por plataforma:
+Artefatos oficiais:
 
-- `.github/workflows/release-windows.yml` (asset `LachhhTools.exe`)
-- `.github/workflows/release-macos.yml` (asset `LachhhTools-macOS-vX.Y.Z.zip`)
+- Windows: `LachhhTools-Windows-vX.Y.Z.exe`
+- macOS: `LachhhTools-macOS-vX.Y.Z.zip`
 
 Comportamento em rerun (idempotente):
 
-- se ambas as tags já existem, o workflow encerra com sucesso sem duplicar release/tag
-- se apenas uma existir, cria apenas a tag faltante
+- se tags do `merge_commit_sha` já existirem, a mesma versão é reutilizada
+- se uma release/asset já existir, o workflow publica apenas o que estiver faltando
 
 Consulte também:
 
