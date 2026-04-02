@@ -1,3 +1,11 @@
+THIS PROJECT IS SPEC-DRIVEN.
+ALL IMPLEMENTATION MUST FOLLOW requirements.md
+DO NOT ADD FEATURES NOT IN THE SPEC.
+DO NOT CHANGE UI FLOW.
+DO NOT CHANGE STATES.
+
+
+
 # LachhhTools
 
 Ferramenta desktop (Adobe AIR) para sorteios e automacoes de stream, com integracao de chat e alertas.
@@ -35,21 +43,12 @@ Preencha:
 
 ## Build
 
-<<<<<<< HEAD
-Exemplo para gerar build local macOS da versão `vX.Y.Z`:
-=======
 Exemplo para gerar build local macOS da versao `vX.Y.Z`:
->>>>>>> 0b0e4a5 (melhorando workflow)
 
 ```bash
 APP_VERSION=X.Y.Z ./scripts/build.sh
 ```
-
-<<<<<<< HEAD
-Exemplo para gerar build local Windows da versão `vX.Y.Z`:
-=======
 Exemplo para gerar build local Windows da versao `vX.Y.Z`:
->>>>>>> 0b0e4a5 (melhorando workflow)
 
 ```powershell
 $env:APP_VERSION="X.Y.Z"
@@ -57,19 +56,14 @@ $env:APP_VERSION="X.Y.Z"
 ```
 
 ## CI/CD em GitHub Actions
-
-<<<<<<< HEAD
-O projeto possui workflows separados para preview de CI e release oficial:
-=======
 O projeto possui uma esteira em nuvem separada por plataforma:
->>>>>>> 0b0e4a5 (melhorando workflow)
 
 - `.github/workflows/pr-validation.yml`
 - `.github/workflows/build-windows.yml`
 - `.github/workflows/build-macos.yml`
 - `.github/workflows/release-on-merge.yml`
 
-<<<<<<< HEAD
+
 Comportamento atual:
 
 - `build-windows.yml` roda em PRs e em push fora de `main/master`
@@ -77,13 +71,11 @@ Comportamento atual:
 - o artifact de preview sobe com contexto do PR/commit, por exemplo `LachhhTools-Windows-pr-4-v1.0.6-preview`
 - `build-macos.yml` fica manual (`workflow_dispatch`) como fallback operacional
 - `release-on-merge.yml` roda no merge de PR para `master` e publica os artefatos oficiais
-=======
 Sequencia oficial:
 
 - `PR -> validacao -> merge -> testes de integracao -> build/release`
 
 ### PR Validation
->>>>>>> 0b0e4a5 (melhorando workflow)
 
 O workflow `PR Validation` roda em PRs para `main/master` e faz o papel de gate obrigatorio antes do merge.
 
