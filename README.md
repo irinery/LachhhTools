@@ -81,39 +81,6 @@ O workflow `PR Validation` roda em PRs para `main/master` e faz o papel de gate 
 
 Ele valida:
 
-<<<<<<< HEAD
-## Release por plataforma (automática no merge)
-
-O versionamento/release é orquestrado automaticamente em merge de PR para `master`:
-
-- `.github/workflows/release-on-merge.yml`
-
-Regras SemVer por label no PR:
-
-- `semver:major`
-- `semver:minor`
-- `semver:patch`
-
-Resolução de conflito de labels:
-
-- maior impacto vence: `major > minor > patch`
-- sem label: default `patch`
-
-Tags geradas automaticamente:
-
-- Windows: `vX.Y.Z`
-- macOS: `vX.Y.Z-mac`
-
-Artefatos oficiais:
-
-- Windows: `LachhhTools-Windows-vX.Y.Z.exe`
-- macOS: `LachhhTools-macOS-vX.Y.Z.zip`
-
-Comportamento em rerun (idempotente):
-
-- se tags do `merge_commit_sha` já existirem, a mesma versão é reutilizada
-- se uma release/asset já existir, o workflow publica apenas o que estiver faltando
-=======
 - presenca e unicidade de 1 label semver
 - presenca e unicidade de 1 label de plataforma
 - sintaxe dos workflows YAML
@@ -144,7 +111,6 @@ O workflow `.github/workflows/release-on-merge.yml` roda no merge de PR para `ma
 - roda testes de integracao so da plataforma liberada
 - faz build so depois dos testes de integracao verdes
 - cria tag e GitHub Release so da plataforma liberada
->>>>>>> 0b0e4a5 (melhorando workflow)
 
 Regras de plataforma:
 

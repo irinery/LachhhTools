@@ -40,72 +40,13 @@ Workflows:
 - `.github/workflows/build-macos.yml`
 - `.github/workflows/release-on-merge.yml`
 
-<<<<<<< HEAD
-Características:
-- Build Windows de preview via `scripts/build.ps1`
-- Build macOS manual de fallback via `scripts/build.sh`
-- Release oficial no merge faz build e publicacao no mesmo workflow
-- Smoke test de integração automatizado por plataforma
-  - Windows: `installers/LachhhTools.exe` + `bin/TwitchGiveawayTool.swf`
-  - macOS: `installers/LachhhTools.app` + `bin/TwitchGiveawayTool.swf`
-
-Versao no CI:
-- resolvida dinamicamente a partir da ultima tag estavel e das labels `semver:*`
-- preview de Windows usa contexto do PR/commit no nome do artifact
-- release oficial usa exatamente a mesma versao calculada no merge
-=======
 Sequencia oficial:
 - `PR -> validacao -> merge -> testes de integracao -> build/release`
 
 ### 1. Validacao obrigatoria no PR
->>>>>>> 0b0e4a5 (melhorando workflow)
 
 `pr-validation.yml` roda em PRs para `main/master` e valida:
 
-<<<<<<< HEAD
-Este projeto publica releases separadas por plataforma a partir de:
-- `.github/workflows/release-on-merge.yml`
-
-Padrões de tag:
-- Windows: `vX.Y.Z`
-- macOS: `vX.Y.Z-mac`
-
-Eles publicam releases separadas:
-- Windows: `LachhhTools-Windows-vX.Y.Z.exe`
-- macOS: `LachhhTools-macOS-vX.Y.Z.zip`
-
-Como funciona no merge de PR para `master`:
-
-- `release-on-merge.yml` roda em `pull_request.closed` com PR merged em `master`
-- resolve a versao oficial com base na ultima tag estavel e nas labels do PR
-- calcula a próxima versão usando labels do PR:
-  - `semver:major`
-  - `semver:minor`
-  - `semver:patch`
-- conflito de labels: maior impacto vence (`major > minor > patch`)
-- sem label: bump `patch`
-- faz checkout do `merge_commit_sha` e builda os artefatos oficiais antes de publicar
-- cria as tags no `merge_commit_sha`:
-  - `vX.Y.Z` (Windows)
-  - `vX.Y.Z-mac` (macOS)
-- rerun idempotente:
-  - se as tags ja existirem para aquele merge, a mesma versao eh reutilizada
-  - se uma release/asset ja existir, publica apenas o que estiver faltando
-
-Preview e fallback:
-- Windows preview: `build-windows.yml`
-- macOS manual: `build-macos.yml` via `workflow_dispatch`
-
-Resultado:
-- Windows:
-  - O preview de CI sobe artifact nomeado com PR/commit e versao prevista
-  - A release oficial publica `LachhhTools-Windows-vX.Y.Z.exe`
-- macOS:
-  - O fallback manual gera preview quando necessario
-  - A release oficial gera o bundle, compacta `.app` para `.zip`
-  - Publica `LachhhTools-macOS-vX.Y.Z.zip`
-
-=======
 - exatamente 1 label semver
 - exatamente 1 label de plataforma
 - YAML dos workflows e actions
@@ -186,7 +127,6 @@ Artefatos oficiais:
 - Windows: `LachhhTools-Windows-vX.Y.Z.exe`
 - macOS: `LachhhTools-macOS-vX.Y.Z.zip`
 
->>>>>>> 0b0e4a5 (melhorando workflow)
 ## macOS
 
 ```bash

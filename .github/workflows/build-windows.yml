@@ -1,21 +1,12 @@
 name: CI Build (Windows Preview)
 
 on:
-<<<<<<< HEAD
-  pull_request:
-    branches: [ "main", "master" ]
-=======
->>>>>>> 0b0e4a5 (melhorando workflow)
   push:
     branches-ignore: [ "main", "master" ]
   workflow_dispatch:
 
 permissions:
   contents: read
-<<<<<<< HEAD
-  pull-requests: read
-=======
->>>>>>> 0b0e4a5 (melhorando workflow)
 
 jobs:
   prepare-version:
@@ -36,41 +27,26 @@ jobs:
         id: version
         uses: ./.github/actions/resolve-release-version
         with:
-<<<<<<< HEAD
-          labels_json: ${{ github.event_name == 'pull_request' && toJson(github.event.pull_request.labels.*.name) || '[]' }}
-          pr_number: ${{ github.event_name == 'pull_request' && github.event.pull_request.number || '' }}
-          sha: ${{ github.sha }}
-          preview_mode: "true"
-=======
           labels_json: "[]"
           pr_number: ""
           sha: ${{ github.sha }}
           preview_mode: "true"
           fallback_semver_label: "semver:patch"
           fallback_platform_label: "platform:windows"
->>>>>>> 0b0e4a5 (melhorando workflow)
 
       - name: Preview summary
         run: |
           {
             echo "## Windows Preview"
-<<<<<<< HEAD
-            echo "- App version: \`${{ steps.version.outputs.app_version }}\`"
-=======
             echo "- App version: \`v${{ steps.version.outputs.app_version }}\`"
             echo "- SemVer label: \`${{ steps.version.outputs.semver_label }}\`"
             echo "- Platform label: \`${{ steps.version.outputs.platform_label }}\`"
->>>>>>> 0b0e4a5 (melhorando workflow)
             echo "- Windows tag preview: \`${{ steps.version.outputs.windows_tag }}\`"
             echo "- Artifact suffix: \`${{ steps.version.outputs.artifact_suffix }}\`"
           } >> "${GITHUB_STEP_SUMMARY}"
 
   build-windows:
-<<<<<<< HEAD
-    name: Build + Validate (Windows)
-=======
     name: Build + Validate (Windows Preview)
->>>>>>> 0b0e4a5 (melhorando workflow)
     needs: prepare-version
     runs-on: windows-latest
 
@@ -90,11 +66,7 @@ jobs:
           air-version: "50.2.4.2"
           accept-license: true
 
-<<<<<<< HEAD
-      - name: Build Application (Windows Preview)
-=======
       - name: Build application (Windows Preview)
->>>>>>> 0b0e4a5 (melhorando workflow)
         shell: powershell
         env:
           APP_VERSION: ${{ needs.prepare-version.outputs.app_version }}
@@ -142,17 +114,10 @@ jobs:
           $versionedExe = ".\installers\LachhhTools-Windows-v$env:APP_VERSION.exe"
           Copy-Item ".\installers\LachhhTools.exe" $versionedExe -Force
           if (-not (Test-Path $versionedExe)) {
-<<<<<<< HEAD
-            throw "Executável versionado não encontrado: $versionedExe"
-          }
-
-      - name: Upload Artifacts (Windows Preview)
-=======
             throw "Executavel versionado nao encontrado: $versionedExe"
           }
 
       - name: Upload artifacts (Windows Preview)
->>>>>>> 0b0e4a5 (melhorando workflow)
         uses: actions/upload-artifact@v4
         with:
           name: LachhhTools-Windows-${{ needs.prepare-version.outputs.artifact_suffix }}

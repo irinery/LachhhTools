@@ -18,8 +18,6 @@ inputs:
     description: Set to true for preview artifacts and false for official merge releases.
     required: false
     default: "true"
-<<<<<<< HEAD
-=======
   require_semver_label:
     description: Fail when no semver label is present.
     required: false
@@ -36,7 +34,6 @@ inputs:
     description: Fallback platform label used when labels are optional.
     required: false
     default: "platform:both"
->>>>>>> 0b0e4a5 (melhorando workflow)
 
 outputs:
   app_version:
@@ -57,20 +54,15 @@ outputs:
   bump:
     description: SemVer bump selected from PR labels.
     value: ${{ steps.resolve.outputs.bump }}
-<<<<<<< HEAD
-=======
   semver_label:
     description: The resolved semver label.
     value: ${{ steps.resolve.outputs.semver_label }}
->>>>>>> 0b0e4a5 (melhorando workflow)
   latest_tag:
     description: Latest stable tag considered for the calculation.
     value: ${{ steps.resolve.outputs.latest_tag }}
   reused_existing_tag:
     description: Whether an existing tag pointing at the target SHA was reused.
     value: ${{ steps.resolve.outputs.reused_existing_tag }}
-<<<<<<< HEAD
-=======
   platform_label:
     description: The resolved platform label.
     value: ${{ steps.resolve.outputs.platform_label }}
@@ -80,7 +72,6 @@ outputs:
   release_macos:
     description: Whether the workflow should release macOS artifacts.
     value: ${{ steps.resolve.outputs.release_macos }}
->>>>>>> 0b0e4a5 (melhorando workflow)
 
 runs:
   using: composite
@@ -92,13 +83,10 @@ runs:
         PR_NUMBER: ${{ inputs.pr_number }}
         SHA: ${{ inputs.sha }}
         PREVIEW_MODE: ${{ inputs.preview_mode }}
-<<<<<<< HEAD
-=======
         REQUIRE_SEMVER_LABEL: ${{ inputs.require_semver_label }}
         REQUIRE_PLATFORM_LABEL: ${{ inputs.require_platform_label }}
         FALLBACK_SEMVER_LABEL: ${{ inputs.fallback_semver_label }}
         FALLBACK_PLATFORM_LABEL: ${{ inputs.fallback_platform_label }}
->>>>>>> 0b0e4a5 (melhorando workflow)
       run: |
         set -euo pipefail
 
@@ -116,20 +104,6 @@ runs:
           [[ "$(git rev-list -n 1 "${tag_name}" 2>/dev/null || true)" == "${target_sha}" ]]
         }
 
-<<<<<<< HEAD
-        git fetch --force --tags origin
-
-        bump="patch"
-        case "${LABELS_JSON}" in
-          *'"semver:major"'*)
-            bump="major"
-            ;;
-          *'"semver:minor"'*)
-            bump="minor"
-            ;;
-          *'"semver:patch"'*)
-            bump="patch"
-=======
         select_single_label() {
           local label_kind="$1"
           local require_label="$2"
@@ -157,6 +131,17 @@ runs:
 
         git fetch --force --tags origin
 
+        require_semver_label_effective="${REQUIRE_SEMVER_LABEL,,}"
+        require_platform_label_effective="${REQUIRE_PLATFORM_LABEL,,}"
+        preview_mode_effective="${PREVIEW_MODE,,}"
+
+        # Em modo preview, os labels podem não existir (ex.: PRs técnicos como "codex").
+        # Nesse caso sempre usamos fallback para evitar falha desnecessária de CI.
+        if [[ "${preview_mode_effective}" == "true" ]]; then
+          require_semver_label_effective="false"
+          require_platform_label_effective="false"
+        fi
+
         semver_matches=()
         for label_name in semver:major semver:minor semver:patch; do
           if [[ "${LABELS_JSON}" == *"\"${label_name}\""* ]]; then
@@ -171,8 +156,8 @@ runs:
           fi
         done
 
-        semver_label="$(select_single_label "semver" "${REQUIRE_SEMVER_LABEL}" "${FALLBACK_SEMVER_LABEL}" "${semver_matches[@]}")"
-        platform_label="$(select_single_label "platform" "${REQUIRE_PLATFORM_LABEL}" "${FALLBACK_PLATFORM_LABEL}" "${platform_matches[@]}")"
+        semver_label="$(select_single_label "semver" "${require_semver_label_effective}" "${FALLBACK_SEMVER_LABEL}" "${semver_matches[@]}")"
+        platform_label="$(select_single_label "platform" "${require_platform_label_effective}" "${FALLBACK_PLATFORM_LABEL}" "${platform_matches[@]}")"
 
         bump="${semver_label#semver:}"
 
@@ -192,7 +177,6 @@ runs:
           *)
             echo "Platform label invalida: ${platform_label}"
             exit 1
->>>>>>> 0b0e4a5 (melhorando workflow)
             ;;
         esac
 
@@ -278,15 +262,10 @@ runs:
           echo "artifact_suffix=${artifact_suffix}"
           echo "is_preview=${is_preview}"
           echo "bump=${bump}"
-<<<<<<< HEAD
-          echo "latest_tag=${latest_tag}"
-          echo "reused_existing_tag=${reused_existing_tag}"
-=======
           echo "semver_label=${semver_label}"
           echo "latest_tag=${latest_tag}"
           echo "reused_existing_tag=${reused_existing_tag}"
           echo "platform_label=${platform_label}"
           echo "release_windows=${release_windows}"
           echo "release_macos=${release_macos}"
->>>>>>> 0b0e4a5 (melhorando workflow)
         } >> "${GITHUB_OUTPUT}"
