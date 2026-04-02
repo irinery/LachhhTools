@@ -10,15 +10,25 @@ permissions:
   pull-requests: read
 
 concurrency:
+<<<<<<< HEAD
   group: release-on-merge-master
+=======
+  group: release-on-merge-${{ github.event.pull_request.base.ref }}
+>>>>>>> 0b0e4a5 (melhorando workflow)
   cancel-in-progress: false
 
 jobs:
   prepare-release:
     name: Resolve Release Version
+<<<<<<< HEAD
     if: >
       github.event.pull_request.merged == true &&
       github.event.pull_request.base.ref == 'master'
+=======
+    if: >-
+      github.event.pull_request.merged == true &&
+      (github.event.pull_request.base.ref == 'master' || github.event.pull_request.base.ref == 'main')
+>>>>>>> 0b0e4a5 (melhorando workflow)
     runs-on: ubuntu-latest
     outputs:
       merge_sha: ${{ steps.context.outputs.merge_sha }}
@@ -27,6 +37,13 @@ jobs:
       mac_tag: ${{ steps.version.outputs.mac_tag }}
       artifact_suffix: ${{ steps.version.outputs.artifact_suffix }}
       reused_existing_tag: ${{ steps.version.outputs.reused_existing_tag }}
+<<<<<<< HEAD
+=======
+      semver_label: ${{ steps.version.outputs.semver_label }}
+      platform_label: ${{ steps.version.outputs.platform_label }}
+      release_windows: ${{ steps.version.outputs.release_windows }}
+      release_macos: ${{ steps.version.outputs.release_macos }}
+>>>>>>> 0b0e4a5 (melhorando workflow)
 
     steps:
       - name: Resolve merge commit SHA
@@ -53,6 +70,11 @@ jobs:
           pr_number: ${{ github.event.pull_request.number }}
           sha: ${{ steps.context.outputs.merge_sha }}
           preview_mode: "false"
+<<<<<<< HEAD
+=======
+          require_semver_label: "true"
+          require_platform_label: "true"
+>>>>>>> 0b0e4a5 (melhorando workflow)
 
       - name: Release summary
         run: |
@@ -60,6 +82,7 @@ jobs:
             echo "## Release On Merge"
             echo "- PR: #${{ github.event.pull_request.number }}"
             echo "- Merge SHA: \`${{ steps.context.outputs.merge_sha }}\`"
+<<<<<<< HEAD
             echo "- App version: \`${{ steps.version.outputs.app_version }}\`"
             echo "- Windows tag: \`${{ steps.version.outputs.windows_tag }}\`"
             echo "- macOS tag: \`${{ steps.version.outputs.mac_tag }}\`"
@@ -69,6 +92,53 @@ jobs:
   build-windows-release:
     name: Build + Validate (Windows Release)
     needs: prepare-release
+=======
+            echo "- SemVer label: \`${{ steps.version.outputs.semver_label }}\`"
+            echo "- Platform label: \`${{ steps.version.outputs.platform_label }}\`"
+            echo "- App version: \`v${{ steps.version.outputs.app_version }}\`"
+            echo "- Windows tag: \`${{ steps.version.outputs.windows_tag }}\`"
+            echo "- macOS tag: \`${{ steps.version.outputs.mac_tag }}\`"
+            echo "- Release Windows: \`${{ steps.version.outputs.release_windows }}\`"
+            echo "- Release macOS: \`${{ steps.version.outputs.release_macos }}\`"
+            echo "- Reused existing tag: \`${{ steps.version.outputs.reused_existing_tag }}\`"
+          } >> "${GITHUB_STEP_SUMMARY}"
+
+  integration-windows:
+    name: Integration Gate (Windows)
+    needs: prepare-release
+    if: needs.prepare-release.outputs.release_windows == 'true'
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout merge commit
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.prepare-release.outputs.merge_sha }}
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: "temurin"
+          java-version: "11"
+
+      - name: Setup HARMAN AIR SDK
+        uses: joshtynjala/setup-adobe-air-action@v2
+        with:
+          air-version: "50.2.4.2"
+          accept-license: true
+
+      - name: Run Windows integration gate
+        shell: powershell
+        run: |
+          .\scripts\windows-integration-gate.ps1 -RootDir "$PWD"
+
+  build-windows-release:
+    name: Build Release (Windows)
+    needs:
+      - prepare-release
+      - integration-windows
+    if: needs.prepare-release.outputs.release_windows == 'true'
+>>>>>>> 0b0e4a5 (melhorando workflow)
     runs-on: windows-latest
 
     steps:
@@ -96,17 +166,28 @@ jobs:
         run: |
           .\scripts\build.ps1 -PackageTarget native
           if (-not (Test-Path ".\installers\LachhhTools.exe")) {
+<<<<<<< HEAD
             throw "Executável não encontrado em installers/LachhhTools.exe"
           }
 
       - name: Validate Windows Build Assets (Explicit Gate)
+=======
+            throw "Executavel nao encontrado em installers/LachhhTools.exe"
+          }
+
+      - name: Validate Windows build assets
+>>>>>>> 0b0e4a5 (melhorando workflow)
         shell: powershell
         run: |
           .\scripts\validate-windows-assets.ps1 `
             -RootDir "$PWD" `
             -ReportDir ".\build\reports"
 
+<<<<<<< HEAD
       - name: Integration Smoke Test (Windows Artifacts)
+=======
+      - name: Post-build smoke test (Windows artifacts)
+>>>>>>> 0b0e4a5 (melhorando workflow)
         shell: powershell
         run: |
           $required = @(
@@ -117,15 +198,26 @@ jobs:
           )
           foreach ($path in $required) {
             if (-not (Test-Path $path)) {
+<<<<<<< HEAD
               throw "Arquivo obrigatório ausente no smoke test: $path"
+=======
+              throw "Arquivo obrigatorio ausente no smoke test: $path"
+>>>>>>> 0b0e4a5 (melhorando workflow)
             }
           }
           $exeSize = (Get-Item ".\installers\LachhhTools.exe").Length
           if ($exeSize -le 1MB) {
+<<<<<<< HEAD
             throw "Executável com tamanho inesperado (<= 1MB): $exeSize bytes"
           }
 
       - name: Critical Smoke Test (Windows Flow)
+=======
+            throw "Executavel com tamanho inesperado (<= 1MB): $exeSize bytes"
+          }
+
+      - name: Critical smoke test (Windows flow)
+>>>>>>> 0b0e4a5 (melhorando workflow)
         shell: powershell
         run: |
           .\scripts\windows-critical-smoke.ps1 `
@@ -140,7 +232,11 @@ jobs:
           $versionedExe = ".\installers\LachhhTools-Windows-v$env:APP_VERSION.exe"
           Copy-Item ".\installers\LachhhTools.exe" $versionedExe -Force
           if (-not (Test-Path $versionedExe)) {
+<<<<<<< HEAD
             throw "Executável versionado não encontrado: $versionedExe"
+=======
+            throw "Executavel versionado nao encontrado: $versionedExe"
+>>>>>>> 0b0e4a5 (melhorando workflow)
           }
 
       - name: Upload Windows release artifact
@@ -154,9 +250,161 @@ jobs:
             build/reports/windows-critical-smoke.json
             build/reports/windows-critical-smoke.txt
 
+<<<<<<< HEAD
   build-macos-release:
     name: Build + Validate (macOS Release)
     needs: prepare-release
+=======
+  publish-windows-release:
+    name: Publish Release (Windows)
+    needs:
+      - prepare-release
+      - build-windows-release
+    if: needs.prepare-release.outputs.release_windows == 'true'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout merge commit
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.prepare-release.outputs.merge_sha }}
+          fetch-depth: 0
+
+      - name: Fetch tags
+        run: |
+          git fetch --force --tags origin
+
+      - name: Configure Git identity
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+      - name: Download Windows release artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: release-windows-v${{ needs.prepare-release.outputs.app_version }}
+          path: dist/windows
+
+      - name: Ensure Windows tag exists
+        env:
+          MERGE_SHA: ${{ needs.prepare-release.outputs.merge_sha }}
+          WINDOWS_TAG: ${{ needs.prepare-release.outputs.windows_tag }}
+        run: |
+          set -euo pipefail
+
+          if git ls-remote --tags --refs origin "refs/tags/${WINDOWS_TAG}" | grep -q .; then
+            echo "Tag ja existe no remoto: ${WINDOWS_TAG}"
+            exit 0
+          fi
+
+          git tag -a "${WINDOWS_TAG}" "${MERGE_SHA}" -m "Release Windows ${WINDOWS_TAG}"
+
+          if git push origin "refs/tags/${WINDOWS_TAG}"; then
+            echo "Tag publicada: ${WINDOWS_TAG}"
+            exit 0
+          fi
+
+          git fetch --force --tags origin
+          if git ls-remote --tags --refs origin "refs/tags/${WINDOWS_TAG}" | grep -q .; then
+            echo "Tag confirmada apos rechecagem: ${WINDOWS_TAG}"
+            exit 0
+          fi
+
+          echo "Falha ao publicar a tag ${WINDOWS_TAG}"
+          exit 1
+
+      - name: Publish Windows release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPOSITORY: ${{ github.repository }}
+          MERGE_SHA: ${{ needs.prepare-release.outputs.merge_sha }}
+          APP_VERSION: ${{ needs.prepare-release.outputs.app_version }}
+          WINDOWS_TAG: ${{ needs.prepare-release.outputs.windows_tag }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          SEMVER_LABEL: ${{ needs.prepare-release.outputs.semver_label }}
+          PLATFORM_LABEL: ${{ needs.prepare-release.outputs.platform_label }}
+          BASE_REF: ${{ github.event.pull_request.base.ref }}
+        run: |
+          set -euo pipefail
+
+          windows_file="$(find dist/windows -type f -name 'LachhhTools-Windows-v*.exe' | head -n 1)"
+          test -n "${windows_file}" && test -f "${windows_file}"
+          asset_name="$(basename "${windows_file}")"
+
+          body=$(cat <<EOF
+          Release gerada automaticamente a partir do merge do PR #${PR_NUMBER} em \`${BASE_REF}\`.
+
+          WINDOWS APENAS:
+          - Versao da aplicacao: \`v${APP_VERSION}\`
+          - SemVer: \`${SEMVER_LABEL}\`
+          - Plataforma: \`${PLATFORM_LABEL}\`
+          - Arquivo para download: \`${asset_name}\`
+          EOF
+          )
+
+          if ! gh release view "${WINDOWS_TAG}" --repo "${REPOSITORY}" >/dev/null 2>&1; then
+            gh release create "${WINDOWS_TAG}" "${windows_file}" \
+              --repo "${REPOSITORY}" \
+              --title "LachhhTools ${WINDOWS_TAG} (WINDOWS)" \
+              --notes "${body}" \
+              --target "${MERGE_SHA}"
+            echo "Release criada: ${WINDOWS_TAG}"
+            exit 0
+          fi
+
+          if gh release view "${WINDOWS_TAG}" --repo "${REPOSITORY}" --json assets --jq '.assets[].name' | grep -Fxq "${asset_name}"; then
+            echo "Asset ja publicado em ${WINDOWS_TAG}: ${asset_name}"
+            exit 0
+          fi
+
+          gh release edit "${WINDOWS_TAG}" \
+            --repo "${REPOSITORY}" \
+            --title "LachhhTools ${WINDOWS_TAG} (WINDOWS)" \
+            --notes "${body}"
+
+          gh release upload "${WINDOWS_TAG}" "${windows_file}" \
+            --repo "${REPOSITORY}" \
+            --clobber
+
+          echo "Asset publicado em ${WINDOWS_TAG}: ${asset_name}"
+
+  integration-macos:
+    name: Integration Gate (macOS)
+    needs: prepare-release
+    if: needs.prepare-release.outputs.release_macos == 'true'
+    runs-on: macos-latest
+
+    steps:
+      - name: Checkout merge commit
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.prepare-release.outputs.merge_sha }}
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: "temurin"
+          java-version: "11"
+
+      - name: Setup HARMAN AIR SDK
+        uses: joshtynjala/setup-adobe-air-action@v2
+        with:
+          air-version: "50.2.4.2"
+          accept-license: true
+
+      - name: Run macOS integration gate
+        shell: bash
+        run: |
+          chmod +x ./scripts/macos-integration-gate.sh
+          ./scripts/macos-integration-gate.sh "$PWD"
+
+  build-macos-release:
+    name: Build Release (macOS)
+    needs:
+      - prepare-release
+      - integration-macos
+    if: needs.prepare-release.outputs.release_macos == 'true'
+>>>>>>> 0b0e4a5 (melhorando workflow)
     runs-on: macos-latest
 
     steps:
@@ -187,7 +435,11 @@ jobs:
           test -d "./installers/LachhhTools.app"
           test -f "./bin/TwitchGiveawayTool.swf"
 
+<<<<<<< HEAD
       - name: Integration Smoke Test (macOS Artifacts)
+=======
+      - name: Post-build smoke test (macOS artifacts)
+>>>>>>> 0b0e4a5 (melhorando workflow)
         shell: bash
         run: |
           test -f "./bin/TwitchGiveawayTool.swf"
@@ -210,12 +462,21 @@ jobs:
           path: |
             installers/LachhhTools-macOS-v${{ needs.prepare-release.outputs.app_version }}.zip
 
+<<<<<<< HEAD
   publish-release:
     name: Publish Tags + Releases
     needs:
       - prepare-release
       - build-windows-release
       - build-macos-release
+=======
+  publish-macos-release:
+    name: Publish Release (macOS)
+    needs:
+      - prepare-release
+      - build-macos-release
+    if: needs.prepare-release.outputs.release_macos == 'true'
+>>>>>>> 0b0e4a5 (melhorando workflow)
     runs-on: ubuntu-latest
 
     steps:
@@ -234,26 +495,36 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
+<<<<<<< HEAD
       - name: Download Windows release artifact
         uses: actions/download-artifact@v4
         with:
           name: release-windows-v${{ needs.prepare-release.outputs.app_version }}
           path: dist/windows
 
+=======
+>>>>>>> 0b0e4a5 (melhorando workflow)
       - name: Download macOS release artifact
         uses: actions/download-artifact@v4
         with:
           name: release-macos-v${{ needs.prepare-release.outputs.app_version }}
           path: dist/macos
 
+<<<<<<< HEAD
       - name: Ensure release tags exist
         env:
           MERGE_SHA: ${{ needs.prepare-release.outputs.merge_sha }}
           WINDOWS_TAG: ${{ needs.prepare-release.outputs.windows_tag }}
+=======
+      - name: Ensure macOS tag exists
+        env:
+          MERGE_SHA: ${{ needs.prepare-release.outputs.merge_sha }}
+>>>>>>> 0b0e4a5 (melhorando workflow)
           MAC_TAG: ${{ needs.prepare-release.outputs.mac_tag }}
         run: |
           set -euo pipefail
 
+<<<<<<< HEAD
           ensure_tag() {
             local tag_name="$1"
             local tag_message="$2"
@@ -284,11 +555,36 @@ jobs:
           ensure_tag "${MAC_TAG}" "Release macOS ${WINDOWS_TAG}"
 
       - name: Publish platform releases
+=======
+          if git ls-remote --tags --refs origin "refs/tags/${MAC_TAG}" | grep -q .; then
+            echo "Tag ja existe no remoto: ${MAC_TAG}"
+            exit 0
+          fi
+
+          git tag -a "${MAC_TAG}" "${MERGE_SHA}" -m "Release macOS ${MAC_TAG}"
+
+          if git push origin "refs/tags/${MAC_TAG}"; then
+            echo "Tag publicada: ${MAC_TAG}"
+            exit 0
+          fi
+
+          git fetch --force --tags origin
+          if git ls-remote --tags --refs origin "refs/tags/${MAC_TAG}" | grep -q .; then
+            echo "Tag confirmada apos rechecagem: ${MAC_TAG}"
+            exit 0
+          fi
+
+          echo "Falha ao publicar a tag ${MAC_TAG}"
+          exit 1
+
+      - name: Publish macOS release
+>>>>>>> 0b0e4a5 (melhorando workflow)
         env:
           GH_TOKEN: ${{ github.token }}
           REPOSITORY: ${{ github.repository }}
           MERGE_SHA: ${{ needs.prepare-release.outputs.merge_sha }}
           APP_VERSION: ${{ needs.prepare-release.outputs.app_version }}
+<<<<<<< HEAD
           WINDOWS_TAG: ${{ needs.prepare-release.outputs.windows_tag }}
           MAC_TAG: ${{ needs.prepare-release.outputs.mac_tag }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
@@ -358,12 +654,88 @@ jobs:
           publish_release "${WINDOWS_TAG}" "LachhhTools ${WINDOWS_TAG} (WINDOWS)" "${windows_body}" "${windows_file}"
           publish_release "${MAC_TAG}" "LachhhTools v${APP_VERSION} (macOS)" "${mac_body}" "${mac_file}"
 
+=======
+          MAC_TAG: ${{ needs.prepare-release.outputs.mac_tag }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          SEMVER_LABEL: ${{ needs.prepare-release.outputs.semver_label }}
+          PLATFORM_LABEL: ${{ needs.prepare-release.outputs.platform_label }}
+          BASE_REF: ${{ github.event.pull_request.base.ref }}
+        run: |
+          set -euo pipefail
+
+          mac_file="$(find dist/macos -type f -name 'LachhhTools-macOS-v*.zip' | head -n 1)"
+          test -n "${mac_file}" && test -f "${mac_file}"
+          asset_name="$(basename "${mac_file}")"
+
+          body=$(cat <<EOF
+          Release gerada automaticamente a partir do merge do PR #${PR_NUMBER} em \`${BASE_REF}\`.
+
+          macOS APENAS:
+          - Versao da aplicacao: \`v${APP_VERSION}\`
+          - SemVer: \`${SEMVER_LABEL}\`
+          - Plataforma: \`${PLATFORM_LABEL}\`
+          - Arquivo para download: \`${asset_name}\`
+          EOF
+          )
+
+          if ! gh release view "${MAC_TAG}" --repo "${REPOSITORY}" >/dev/null 2>&1; then
+            gh release create "${MAC_TAG}" "${mac_file}" \
+              --repo "${REPOSITORY}" \
+              --title "LachhhTools v${APP_VERSION} (macOS)" \
+              --notes "${body}" \
+              --target "${MERGE_SHA}"
+            echo "Release criada: ${MAC_TAG}"
+            exit 0
+          fi
+
+          if gh release view "${MAC_TAG}" --repo "${REPOSITORY}" --json assets --jq '.assets[].name' | grep -Fxq "${asset_name}"; then
+            echo "Asset ja publicado em ${MAC_TAG}: ${asset_name}"
+            exit 0
+          fi
+
+          gh release edit "${MAC_TAG}" \
+            --repo "${REPOSITORY}" \
+            --title "LachhhTools v${APP_VERSION} (macOS)" \
+            --notes "${body}"
+
+          gh release upload "${MAC_TAG}" "${mac_file}" \
+            --repo "${REPOSITORY}" \
+            --clobber
+
+          echo "Asset publicado em ${MAC_TAG}: ${asset_name}"
+
+  release-summary:
+    name: Release Summary
+    needs:
+      - prepare-release
+      - publish-windows-release
+      - publish-macos-release
+    if: >-
+      always() &&
+      needs.prepare-release.result == 'success' &&
+      (needs.publish-windows-release.result == 'success' || needs.publish-windows-release.result == 'skipped') &&
+      (needs.publish-macos-release.result == 'success' || needs.publish-macos-release.result == 'skipped')
+    runs-on: ubuntu-latest
+
+    steps:
+>>>>>>> 0b0e4a5 (melhorando workflow)
       - name: Publish summary
         run: |
           {
             echo "## Published Releases"
+<<<<<<< HEAD
             echo "- Windows tag: \`${{ needs.prepare-release.outputs.windows_tag }}\`"
             echo "- macOS tag: \`${{ needs.prepare-release.outputs.mac_tag }}\`"
             echo "- Windows asset: \`LachhhTools-Windows-v${{ needs.prepare-release.outputs.app_version }}.exe\`"
             echo "- macOS asset: \`LachhhTools-macOS-v${{ needs.prepare-release.outputs.app_version }}.zip\`"
+=======
+            echo "- SemVer label: \`${{ needs.prepare-release.outputs.semver_label }}\`"
+            echo "- Platform label: \`${{ needs.prepare-release.outputs.platform_label }}\`"
+            echo "- Windows enabled: \`${{ needs.prepare-release.outputs.release_windows }}\`"
+            echo "- macOS enabled: \`${{ needs.prepare-release.outputs.release_macos }}\`"
+            echo "- Windows tag: \`${{ needs.prepare-release.outputs.windows_tag }}\`"
+            echo "- macOS tag: \`${{ needs.prepare-release.outputs.mac_tag }}\`"
+            echo "- Windows release job: \`${{ needs.publish-windows-release.result }}\`"
+            echo "- macOS release job: \`${{ needs.publish-macos-release.result }}\`"
+>>>>>>> 0b0e4a5 (melhorando workflow)
           } >> "${GITHUB_STEP_SUMMARY}"

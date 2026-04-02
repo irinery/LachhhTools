@@ -1,4 +1,8 @@
+<<<<<<< HEAD
 name: CI Build (macOS Manual Preview)
+=======
+name: CI Build (macOS Preview Fallback)
+>>>>>>> 0b0e4a5 (melhorando workflow)
 
 on:
   workflow_dispatch:
@@ -29,18 +33,34 @@ jobs:
           pr_number: ""
           sha: ${{ github.sha }}
           preview_mode: "true"
+<<<<<<< HEAD
+=======
+          fallback_semver_label: "semver:patch"
+          fallback_platform_label: "platform:macos"
+>>>>>>> 0b0e4a5 (melhorando workflow)
 
       - name: Preview summary
         run: |
           {
+<<<<<<< HEAD
             echo "## macOS Manual Preview"
             echo "- App version: \`${{ steps.version.outputs.app_version }}\`"
+=======
+            echo "## macOS Preview Fallback"
+            echo "- App version: \`v${{ steps.version.outputs.app_version }}\`"
+            echo "- SemVer label: \`${{ steps.version.outputs.semver_label }}\`"
+            echo "- Platform label: \`${{ steps.version.outputs.platform_label }}\`"
+>>>>>>> 0b0e4a5 (melhorando workflow)
             echo "- macOS tag preview: \`${{ steps.version.outputs.mac_tag }}\`"
             echo "- Artifact suffix: \`${{ steps.version.outputs.artifact_suffix }}\`"
           } >> "${GITHUB_STEP_SUMMARY}"
 
   build-macos:
+<<<<<<< HEAD
     name: Build + Validate (macOS)
+=======
+    name: Build + Validate (macOS Preview)
+>>>>>>> 0b0e4a5 (melhorando workflow)
     needs: prepare-version
     runs-on: macos-latest
 
@@ -60,7 +80,11 @@ jobs:
           air-version: "50.2.4.2"
           accept-license: true
 
+<<<<<<< HEAD
       - name: Build Application (macOS Preview)
+=======
+      - name: Build application (macOS Preview)
+>>>>>>> 0b0e4a5 (melhorando workflow)
         shell: bash
         env:
           APP_VERSION: ${{ needs.prepare-version.outputs.app_version }}
@@ -68,7 +92,7 @@ jobs:
         run: |
           ./scripts/build.sh
 
-      - name: Integration Smoke Test (macOS Artifacts)
+      - name: Post-build smoke test (macOS Preview)
         shell: bash
         run: |
           test -f "./bin/TwitchGiveawayTool.swf"
@@ -84,7 +108,11 @@ jobs:
             "./installers/LachhhTools-macOS-v${APP_VERSION}.zip"
           test -f "./installers/LachhhTools-macOS-v${APP_VERSION}.zip"
 
+<<<<<<< HEAD
       - name: Upload Artifacts (macOS Preview)
+=======
+      - name: Upload artifacts (macOS Preview)
+>>>>>>> 0b0e4a5 (melhorando workflow)
         uses: actions/upload-artifact@v4
         with:
           name: LachhhTools-macOS-${{ needs.prepare-version.outputs.artifact_suffix }}

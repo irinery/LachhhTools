@@ -1,0 +1,57 @@
+name: PR Validation
+
+on:
+  pull_request:
+    branches: [ "main", "master" ]
+    types:
+      - opened
+      - reopened
+      - synchronize
+      - labeled
+      - unlabeled
+      - edited
+      - ready_for_review
+
+permissions:
+  contents: read
+  pull-requests: read
+
+jobs:
+  technical-gate:
+    name: Technical Gate
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Resolve required labels and version
+        id: version
+        uses: ./.github/actions/resolve-release-version
+        with:
+          labels_json: ${{ toJson(github.event.pull_request.labels.*.name) }}
+          pr_number: ${{ github.event.pull_request.number }}
+          sha: ${{ github.event.pull_request.head.sha }}
+          preview_mode: "true"
+          require_semver_label: "true"
+          require_platform_label: "true"
+
+      - name: Run PR technical gate
+        run: |
+          chmod +x ./scripts/validate-ci-contract.sh
+          ./scripts/validate-ci-contract.sh
+
+      - name: PR validation summary
+        run: |
+          {
+            echo "## PR Validation"
+            echo "- PR: #${{ github.event.pull_request.number }}"
+            echo "- SemVer label: \`${{ steps.version.outputs.semver_label }}\`"
+            echo "- Platform label: \`${{ steps.version.outputs.platform_label }}\`"
+            echo "- Preview version: \`v${{ steps.version.outputs.app_version }}\`"
+            echo "- Preview suffix: \`${{ steps.version.outputs.artifact_suffix }}\`"
+            echo "- Windows release enabled: \`${{ steps.version.outputs.release_windows }}\`"
+            echo "- macOS release enabled: \`${{ steps.version.outputs.release_macos }}\`"
+          } >> "${GITHUB_STEP_SUMMARY}"
