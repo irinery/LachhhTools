@@ -131,6 +131,17 @@ runs:
 
         git fetch --force --tags origin
 
+        require_semver_label_effective="${REQUIRE_SEMVER_LABEL,,}"
+        require_platform_label_effective="${REQUIRE_PLATFORM_LABEL,,}"
+        preview_mode_effective="${PREVIEW_MODE,,}"
+
+        # Em modo preview, os labels podem não existir (ex.: PRs técnicos como "codex").
+        # Nesse caso sempre usamos fallback para evitar falha desnecessária de CI.
+        if [[ "${preview_mode_effective}" == "true" ]]; then
+          require_semver_label_effective="false"
+          require_platform_label_effective="false"
+        fi
+
         semver_matches=()
         for label_name in semver:major semver:minor semver:patch; do
           if [[ "${LABELS_JSON}" == *"\"${label_name}\""* ]]; then
@@ -145,8 +156,8 @@ runs:
           fi
         done
 
-        semver_label="$(select_single_label "semver" "${REQUIRE_SEMVER_LABEL}" "${FALLBACK_SEMVER_LABEL}" "${semver_matches[@]}")"
-        platform_label="$(select_single_label "platform" "${REQUIRE_PLATFORM_LABEL}" "${FALLBACK_PLATFORM_LABEL}" "${platform_matches[@]}")"
+        semver_label="$(select_single_label "semver" "${require_semver_label_effective}" "${FALLBACK_SEMVER_LABEL}" "${semver_matches[@]}")"
+        platform_label="$(select_single_label "platform" "${require_platform_label_effective}" "${FALLBACK_PLATFORM_LABEL}" "${platform_matches[@]}")"
 
         bump="${semver_label#semver:}"
 
